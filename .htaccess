@@ -1,0 +1,12 @@
+RewriteEngine On
+RewriteBase /
+
+# Si c'est un fichier ou dossier existant, ne pas rediriger
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Rediriger tout vers index.php avec le paramètre url
+RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]
+# Désactiver l'affichage des erreurs dans .htaccess (pour que PHP les affiche)
+php_flag display_errors on
+php_value error_reporting 32767

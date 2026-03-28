@@ -1,0 +1,23 @@
+# Fichiers sensibles
+config/database.php
+config/installed.lock
+.env
+
+# Dossiers temporaires
+/vendor/
+/node_modules/
+/tmp/
+/cache/
+/logs/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+*.log
+*.sql
+*.gz
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
