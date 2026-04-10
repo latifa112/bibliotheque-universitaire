@@ -13,11 +13,13 @@ BiblioGest est une application web moderne de gestion de bibliothèque universit
 
 | Rôle | Membres |
 |------|---------|
-| **Chef de projet** | Nawel |
-| **Développeur Backend** | nawel, latifa |
-| **Développeur Frontend** | ryham, nesrine |
-| **Intégrateur** | maria |
-| **Testeur** | feriel|
+| **Chef de projet** | Nawel Aiteche |
+| **Développeur Backend (Authentification)** | Nawel Aiteche |
+| **Développeur Backend (Catalogue)** | Latifa Ayache |
+| **Développeur Backend (Emprunts)** | Maria Abbout |
+| **Développeur Backend (Utilisateurs)** | Ryham Benacer |
+| **Développeur Backend (Statistiques)** | Nesrine Bouamara |
+| **Développeuse Frontend** | Feriel Bouda |
 
 ## ✨ Fonctionnalités
 
@@ -37,12 +39,13 @@ BiblioGest est une application web moderne de gestion de bibliothèque universit
 - Emprunter un livre disponible
 - Retourner un livre
 - Historique des emprunts
-- Notifications de retard
+- Notifications de retard (automatiques)
 
 ### 📅 Réservations
 - Réserver un livre indisponible
 - Annuler une réservation
 - Expiration automatique après 7 jours
+- File d'attente automatique
 
 ### 👨‍💼 Administration
 - Gestion complète du catalogue (CRUD)
@@ -81,6 +84,7 @@ BiblioGest est une application web moderne de gestion de bibliothèque universit
 | JavaScript | ES6 | Interactions dynamiques |
 | Chart.js | 3.9+ | Graphiques statistiques |
 | Font Awesome | 6.5+ | Icônes |
+| Git | - | Versionnement |
 
 ## 📋 Prérequis
 
@@ -92,7 +96,7 @@ BiblioGest est une application web moderne de gestion de bibliothèque universit
 ## 🚀 Installation
 
 ### 1. Cloner le projet
-```bash
+
+  bash
 git clone https://github.com/latifa112/bibliotheque-universitaire.git
 cd bibliotheque-universitaire
-git checkout code
