@@ -54,5 +54,28 @@ class Notification extends Model {
             ':link' => $link
         ]);
     }
+ 
+public function addOverdueNotification($userId, $type, $message, $loanId = null) {
+    $title = '';
+    if ($type == 'overdue') {
+        $title = '⚠️ Livre en retard';
+    } elseif ($type == 'reminder') {
+        $title = '⏰ Retour imminent';
+    } else {
+        $title = 'Notification';
+    }
+    
+    $stmt = $this->db->prepare("
+        INSERT INTO notifications (user_id, type, title, message, loan_id, is_read, created_at) 
+        VALUES (:user_id, :type, :title, :message, :loan_id, 0, NOW())
+    ");
+    return $stmt->execute([
+        ':user_id' => $userId,
+        ':type' => $type,
+        ':title' => $title,
+        ':message' => $message,
+        ':loan_id' => $loanId
+    ]);
+}
 }
 ?>
