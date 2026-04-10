@@ -1,10 +1,12 @@
 #!/usr/bin/env php
 <?php
 define('ROOT', dirname(__DIR__));
-require_once ROOT . '/app/core/Database.php';
+require_once ROOT . '/config/database.php';
+require_once ROOT . '/app/core/Model.php';
 require_once ROOT . '/app/models/Notification.php';
 
 $db = Database::getInstance()->getConnection();
+$notification = new Notification();
 
 // Trouver les emprunts en retard
 $stmt = $db->prepare("
@@ -18,14 +20,25 @@ $stmt = $db->prepare("
 $stmt->execute();
 $overdueLoans = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$notification = new Notification();
-
 foreach ($overdueLoans as $loan) {
-    $daysLate = (new DateTime())->diff(new DateTime($loan['due_date']))->days;
+    $dueDate = new DateTime($loan['due_date']);
+    $now = new DateTime();
+    $interval = $now->diff($dueDate);
+    $daysLate = $interval->days;
     
-    // Créer une notification dans la base de données
+    // Mettre à jour le statut de l'emprunt
+    $update = $db->prepare("UPDATE loans SET status = 'en_retard' WHERE id = ?");
+    $update->execute([$loan['id']]);
+    
+    // Créer une notification avec createNotification
     $message = "Le livre '{$loan['title']}' de {$loan['author']} est en retard de {$daysLate} jour(s). Veuillez le retourner rapidement.";
-    $notification->addOverdueNotification($loan['user_id'], 'overdue', $message, $loan['id']);
+    $notification->createNotification(
+        $loan['user_id'],
+        'danger',
+        'Livre en retard',
+        $message,
+        '/loans'
+    );
     
     // Envoyer un email (optionnel)
     $to = $loan['email'];
@@ -33,10 +46,10 @@ foreach ($overdueLoans as $loan) {
     $body = "Bonjour {$loan['first_name']} {$loan['last_name']},\n\n";
     $body .= "Le livre '{$loan['title']}' que vous avez emprunté est actuellement en retard de {$daysLate} jour(s).\n";
     $body .= "Date d'échéance : " . date('d/m/Y', strtotime($loan['due_date'])) . "\n";
-    $body .= "Veuillez le retourner dès que possible pour éviter des pénalités.\n\n";
+    $body .= "Veuillez le retourner dès que possible.\n\n";
     $body .= "Cordialement,\nL'équipe BiblioGest";
     
-    mail($to, $subject, $body, "From: notifications@bibliogest.com");
+    @mail($to, $subject, $body, "From: notifications@bibliogest.com");
 }
 
 // Trouver les emprunts qui approchent de l'échéance (3 jours ou moins)
@@ -59,7 +72,13 @@ foreach ($approachingLoans as $loan) {
     
     // Créer une notification
     $message = "Le livre '{$loan['title']}' doit être retourné dans {$daysLeft} jour(s).";
-    $notification->addOverdueNotification($loan['user_id'], 'reminder', $message, $loan['id']);
+    $notification->createNotification(
+        $loan['user_id'],
+        'warning',
+        'Retour imminent',
+        $message,
+        '/loans'
+    );
     
     // Envoyer un email
     $to = $loan['email'];
@@ -69,7 +88,7 @@ foreach ($approachingLoans as $loan) {
     $body .= "Date d'échéance : " . date('d/m/Y', strtotime($loan['due_date'])) . "\n\n";
     $body .= "Cordialement,\nL'équipe BiblioGest";
     
-    mail($to, $subject, $body, "From: notifications@bibliogest.com");
+    @mail($to, $subject, $body, "From: notifications@bibliogest.com");
 }
 
-echo "Vérification terminée. " . count($overdueLoans) . " retards, " . count($approachingLoans) . " rappels envoyés.\n";
+echo "Verification terminee. " . count($overdueLoans) . " retards, " . count($approachingLoans) . " rappels envoyes.\n";
