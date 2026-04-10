@@ -25,6 +25,9 @@ spl_autoload_register(function($class) {
 // Démarrer la session
 session_start();
 
+// Définir le charset pour les réponses JSON
+header('Content-Type: text/html; charset=utf-8');
+
 require_once ROOT . '/app/core/Language.php';
 Language::getInstance();
 

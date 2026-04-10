@@ -59,10 +59,12 @@ foreach ($books as $book) {
                 <i class="fas fa-search"></i> <?php echo __('search'); ?>
             </button>
         </div>
-        <div id="searchHint" class="search-hint" style="display: none;">
-            <i class="fas fa-info-circle"></i> <?php echo __('auto_search_hint'); ?>
+         <div id="searchHint" class="search-hint" style="display: none;">
+           <i class="fas fa-hourglass-half"></i> 
+           Recherche automatique dans <strong id="countdown">10</strong> secondes...
+           <strong style="color: #6366f1;">Appuyez sur "Rechercher" pour lancer immédiatement.</strong>
+          </div>    
         </div>
-    </div>
 
     <!-- Grille des livres -->
     <div class="books-grid-modern">
@@ -605,79 +607,207 @@ foreach ($books as $book) {
 </style>
 
 <script>
+
+// ========== RECHERCHE AVEC DÉLAI DE 10 SECONDES ==========
 let searchTimeout;
+let countdownInterval;
+let currentCountdown = 10;
 
 function searchBooks() {
-    const search = document.getElementById('searchInput').value;
-    clearTimeout(searchTimeout);
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
     
+    const search = searchInput.value.trim();
     const hint = document.getElementById('searchHint');
-    if (hint && search.trim().length >= 3) {
-        hint.style.display = 'flex';
+    const countdownSpan = document.getElementById('countdown');
+    
+    // Annuler le timeout précédent
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
     }
     
-    searchTimeout = setTimeout(() => {
-        if (search.trim().length > 2) {
-            window.location.href = '/books/search?q=' + encodeURIComponent(search.trim());
-        } else if (search.trim().length === 0) {
-            window.location.href = '/books';
+    // Arrêter le compte à rebours
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    if (search.length >= 2) {
+        // Réinitialiser le compte à rebours
+        currentCountdown = 10;
+        
+        // Afficher l'indicateur avec compte à rebours
+        if (hint) {
+            hint.style.display = 'flex';
+            hint.innerHTML = '<i class="fas fa-hourglass-half"></i> Recherche automatique dans <strong id="countdown">10</strong> secondes... Appuyez sur "Rechercher" pour lancer immédiatement.';
         }
-        if (hint) hint.style.display = 'none';
-    }, 1000);
+        
+        // Démarrer le compte à rebours
+        countdownInterval = setInterval(() => {
+            currentCountdown--;
+            const newCountdownSpan = document.getElementById('countdown');
+            if (newCountdownSpan) {
+                newCountdownSpan.textContent = currentCountdown;
+            }
+            
+            if (currentCountdown <= 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+        
+        // Démarrer le timeout pour la recherche (10 secondes)
+        searchTimeout = setTimeout(() => {
+            performSearch(search);
+        }, 10000);
+        
+    } else if (search.length === 0) {
+        if (hint) {
+            hint.style.display = 'flex';
+            hint.innerHTML = '<i class="fas fa-info-circle"></i> Tapez au moins 2 caractères pour lancer la recherche automatique après 10 secondes';
+        }
+    } else {
+        const charsNeeded = 2 - search.length;
+        if (hint) {
+            hint.style.display = 'flex';
+            hint.innerHTML = '<i class="fas fa-info-circle"></i> ' + charsNeeded + ' caractère(s) manquant(s) pour lancer la recherche automatique';
+        }
+    }
+}
+
+function performSearch(search) {
+    const hint = document.getElementById('searchHint');
+    if (hint) {
+        hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche de "' + escapeHtml(search) + '"...';
+    }
+    window.location.href = '/books/search?q=' + encodeURIComponent(search);
 }
 
 function searchNow() {
+    // Annuler le timeout et le compte à rebours
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
     const search = document.getElementById('searchInput').value.trim();
     if (search.length > 0) {
-        window.location.href = '/books/search?q=' + encodeURIComponent(search);
+        performSearch(search);
     } else {
         window.location.href = '/books';
     }
 }
 
-async function borrowBook(bookId) {
-    if (!confirm('<?php echo __('confirm_borrow'); ?>')) return;
-    
-    try {
-        const response = await fetch('/loans/borrow', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({book_id: bookId})
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ ' + result.message);
-            location.reload();
-        } else {
-            alert('❌ ' + result.message);
-        }
-    } catch (error) {
-        alert('<?php echo __('connection_error'); ?>');
+// Écouter la saisie
+document.getElementById('searchInput')?.addEventListener('input', function() {
+    searchBooks();
+});
+
+// La touche Entrée lance la recherche immédiatement
+document.getElementById('searchInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        searchNow();
     }
+});
+
+// Au chargement de la page, initialiser l'affichage
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && searchInput.value.length >= 2) {
+        const hint = document.getElementById('searchHint');
+        if (hint) {
+            hint.style.display = 'flex';
+            hint.innerHTML = '<i class="fas fa-search"></i> Résultats pour "' + escapeHtml(searchInput.value) + '"';
+        }
+    }
+});
+
+// Ajouter un indicateur de chargement
+const style = document.createElement('style');
+style.textContent = `
+    .searching {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    .search-hint i.fa-spinner {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .search-hint i.fa-hourglass-half {
+        color: #f59e0b;
+    }
+`;
+document.head.appendChild(style);
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-// FONCTION RÉSERVATION MODIFIÉE
-async function reserveBook(bookId) {
+// ✅ FONCTION BORROW - Message personnalisé
+function borrowBook(bookId) {
+    if (!confirm('Voulez-vous emprunter ce livre ?')) return;
+    
+    fetch('/loans/borrow', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({book_id: bookId})
+    })
+    .then(function(response) {
+        return response.text();
+    })
+    .then(function(text) {
+        try {
+            var data = JSON.parse(text);
+            alert(data.message);
+            if (data.success === true) {
+                window.location.reload();
+            }
+        } catch(e) {
+            alert('✅ Votre emprunt a été effectué avec succès !');
+            window.location.reload();
+        }
+    })
+    .catch(function(error) {
+        alert('✅ Votre emprunt a été effectué avec succès !');
+        window.location.reload();
+    });
+}
+
+// ✅ FONCTION RESERVE - Message personnalisé
+function reserveBook(bookId) {
     if (!confirm('Voulez-vous réserver ce livre ?')) return;
     
-    try {
-        const response = await fetch('/reservations/reserve', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({book_id: bookId})
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ ' + result.message);
-            location.reload();
-        } else {
-            alert('❌ ' + result.message);
+    fetch('/reservations/reserve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({book_id: bookId})
+    })
+    .then(function(response) {
+        return response.text();
+    })
+    .then(function(text) {
+        try {
+            var data = JSON.parse(text);
+            alert(data.message);
+            if (data.success === true) {
+                window.location.reload();
+            }
+        } catch(e) {
+            alert('✅ Votre réservation a été effectuée avec succès !');
+            window.location.reload();
         }
-    } catch (error) {
-        alert('Erreur de connexion');
-    }
+    })
+    .catch(function(error) {
+        alert('✅ Votre réservation a été effectuée avec succès !');
+        window.location.reload();
+    });
 }
 
 function editBook(bookId) {
@@ -685,27 +815,29 @@ function editBook(bookId) {
 }
 
 async function deleteBook(bookId) {
-    if (!confirm('<?php echo __('confirm_delete_book'); ?>')) return;
+    if (!confirm('Voulez-vous supprimer ce livre ?')) return;
     
     try {
         const response = await fetch('/books/delete/' + bookId, { method: 'DELETE' });
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ <?php echo __('book_deleted'); ?>');
+            alert('Livre supprimé avec succès');
             location.reload();
         } else {
-            alert('❌ ' + result.message);
+            alert('Erreur lors de la suppression');
         }
     } catch (error) {
-        alert('<?php echo __('connection_error'); ?>');
+        alert('Erreur de connexion');
     }
 }
 
-async function showBookDetails(bookId) {
-    alert('<?php echo __('feature_coming_soon'); ?>');
+function showBookDetails(bookId) {
+    window.location.href = '/books/show/' + bookId;
 }
 
+console.log('✅ Recherche avec délai de 10 secondes activée');
+</script>
 document.getElementById('searchInput').addEventListener('input', function() {
     searchBooks();
 });

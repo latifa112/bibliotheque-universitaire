@@ -1,5 +1,9 @@
 <?php
 $activePage = 'books';
+$totalBooks = $totalBooks ?? 0;
+$activeLoans = $activeLoans ?? 0;
+$totalUsers = $totalUsers ?? 0;
+$totalReservations = $totalReservations ?? 0;
 ?>
 
 <div class="create-book-container">
@@ -61,6 +65,10 @@ $activePage = 'books';
                             <input type="text" id="isbn" name="isbn" placeholder=" ">
                             <label for="isbn"><?php echo __('isbn'); ?></label>
                             <i class="fas fa-barcode input-icon"></i>
+                        </div>
+                        <!-- Message d'aide pour l'ISBN -->
+                        <div class="isbn-help" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: -0.8rem; margin-bottom: 1rem; padding-left: 2.8rem;">
+                            <i class="fas fa-info-circle"></i> Format accepté : 10 ou 13 chiffres (ex: 9782081512678 ou 978-2-0815-1267-8)
                         </div>
                     </div>
 
@@ -166,7 +174,6 @@ $activePage = 'books';
     </div>
 </div>
 
-<!-- Garde tous tes styles CSS inchangés -->
 <style>
 /* Tous tes styles CSS existants restent inchangés */
 .create-book-container {
@@ -560,6 +567,19 @@ $activePage = 'books';
     box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
+.isbn-help {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: -0.8rem;
+    margin-bottom: 1rem;
+    padding-left: 2.8rem;
+}
+
+.isbn-help i {
+    color: var(--primary);
+    margin-right: 0.3rem;
+}
+
 @media (max-width: 768px) {
     .form-grid {
         grid-template-columns: 1fr;
@@ -590,6 +610,10 @@ $activePage = 'books';
         width: 150px;
         height: 210px;
     }
+    
+    .isbn-help {
+        padding-left: 1rem;
+    }
 }
 
 @keyframes fadeInUp {
@@ -605,36 +629,56 @@ $activePage = 'books';
 </style>
 
 <script>
+// Fonction de validation ISBN
+function validateISBN(isbn) {
+    if (!isbn) return true; // ISBN optionnel
+    
+    // Supprimer les tirets pour la vérification
+    const cleanIsbn = isbn.replace(/-/g, '');
+    
+    // Vérifier que c'est 10 ou 13 chiffres
+    if (/^\d{10}$/.test(cleanIsbn) || /^\d{13}$/.test(cleanIsbn)) {
+        return true;
+    }
+    return false;
+}
+
 // Mise à jour de l'aperçu de la quantité
 const quantityInput = document.getElementById('quantity');
 const quantityPreview = document.getElementById('quantityPreview');
 
-quantityInput.addEventListener('input', function() {
-    quantityPreview.textContent = this.value;
-});
+if (quantityInput) {
+    quantityInput.addEventListener('input', function() {
+        quantityPreview.textContent = this.value;
+    });
+}
 
 // Aperçu de l'image en temps réel
 const coverInput = document.getElementById('cover_image');
 const coverPreview = document.getElementById('coverPreview');
 
-coverInput.addEventListener('input', function() {
-    const url = this.value;
-    if (url && url.match(/^https?:\/\/.+\..+/)) {
-        coverPreview.innerHTML = `<img src="${url}" alt="Aperçu de la couverture" onerror="this.parentElement.innerHTML='<div class=\'placeholder\'><i class=\'fas fa-image\'></i><span><?php echo __('invalid_image'); ?></span></div>'">`;
-    } else if (url) {
-        coverPreview.innerHTML = `<div class="placeholder"><i class="fas fa-exclamation-triangle"></i><span><?php echo __('invalid_url'); ?></span></div>`;
-    } else {
-        coverPreview.innerHTML = `<div class="placeholder"><i class="fas fa-cloud-upload-alt"></i><span><?php echo __('add_image'); ?></span></div>`;
-    }
-});
+if (coverInput) {
+    coverInput.addEventListener('input', function() {
+        const url = this.value;
+        if (url && url.match(/^https?:\/\/.+\..+/)) {
+            coverPreview.innerHTML = `<img src="${url}" alt="Aperçu de la couverture" onerror="this.parentElement.innerHTML='<div class=\'placeholder\'><i class=\'fas fa-image\'></i><span>Image invalide</span></div>'">`;
+        } else if (url) {
+            coverPreview.innerHTML = `<div class="placeholder"><i class="fas fa-exclamation-triangle"></i><span>URL invalide</span></div>`;
+        } else {
+            coverPreview.innerHTML = `<div class="placeholder"><i class="fas fa-cloud-upload-alt"></i><span>Ajouter une image</span></div>`;
+        }
+    });
+}
 
 // Compteur de caractères
 const description = document.getElementById('description');
 const charCount = document.getElementById('charCount');
 
-description.addEventListener('input', function() {
-    charCount.textContent = this.value.length;
-});
+if (description) {
+    description.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+}
 
 // Animation au focus des inputs
 document.querySelectorAll('.input-group input, .input-group select').forEach(input => {
@@ -648,48 +692,80 @@ document.querySelectorAll('.input-group input, .input-group select').forEach(inp
     });
 });
 
-// Soumission du formulaire
+// Soumission du formulaire - VERSION CORRIGÉE AVEC VALIDATION ISBN
 document.getElementById('createBookForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
+    console.log('Formulaire soumis');
     
-    if (!data.title || !data.author) {
-        alert('<?php echo __('required_fields'); ?>');
+    // Récupérer les valeurs
+    const title = document.getElementById('title')?.value;
+    const author = document.getElementById('author')?.value;
+    const isbn = document.getElementById('isbn')?.value || '';
+    const description = document.getElementById('description')?.value || '';
+    const category = document.getElementById('category')?.value || '';
+    const cover_image = document.getElementById('cover_image')?.value || '';
+    const quantity = parseInt(document.getElementById('quantity')?.value || 1);
+    
+    // Validation des champs obligatoires
+    if (!title || !author) {
+        alert('❌ Le titre et l\'auteur sont obligatoires');
         return;
     }
     
-    data.available_quantity = data.quantity;
+    // Validation du format ISBN
+    if (isbn && !validateISBN(isbn)) {
+        alert('❌ Format ISBN invalide. L\'ISBN doit contenir 10 ou 13 chiffres.\nExemples: 9782081512678 ou 978-2-0815-1267-8');
+        return;
+    }
+    
+    const data = {
+        title: title,
+        author: author,
+        isbn: isbn,
+        description: description,
+        category: category,
+        cover_image: cover_image,
+        quantity: quantity,
+        available_quantity: quantity
+    };
+    
+    console.log('Données envoyées:', data);
     
     const submitBtn = this.querySelector('.btn-save');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <?php echo __('adding'); ?>...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajout en cours...';
     submitBtn.disabled = true;
     
     try {
         const response = await fetch('/books/create', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(data)
         });
+        
         const result = await response.json();
+        console.log('Réponse:', result);
         
         if (result.success) {
-            submitBtn.style.background = '#10b981';
-            submitBtn.innerHTML = '<i class="fas fa-check"></i> <?php echo __('book_added'); ?>!';
-            setTimeout(() => {
+            alert('✅ ' + result.message);
+            if (result.redirect) {
+                window.location.href = result.redirect;
+            } else {
                 window.location.href = '/books';
-            }, 1000);
+            }
         } else {
+            alert('❌ ' + result.message);
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
-            alert('❌ ' + result.message);
         }
     } catch (error) {
+        console.error('Erreur:', error);
+        alert('❌ Erreur de connexion: ' + error.message);
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
-        alert('<?php echo __('connection_error'); ?>');
     }
 });
 </script>
