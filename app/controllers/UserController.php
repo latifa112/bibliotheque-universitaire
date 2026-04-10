@@ -31,65 +31,66 @@ class UserController extends Controller {
         include ROOT . '/app/views/auth/login.php';
         exit;
     }
-public function register() {
-    if ($this->isLoggedIn()) {
-        $this->redirect('/dashboard');
-    }
     
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $input = json_decode(file_get_contents('php://input'), true);
+    public function register() {
+        if ($this->isLoggedIn()) {
+            $this->redirect('/dashboard');
+        }
         
-        // Récupérer le rôle - défaut étudiant si non spécifié
-        $role = 'etudiant';
-        if (isset($input['role']) && !empty($input['role'])) {
-            if ($input['role'] === 'professeur') {
-                $role = 'professeur';
-            } else {
-                $role = 'etudiant';
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            // Récupérer le rôle - défaut étudiant si non spécifié
+            $role = 'etudiant';
+            if (isset($input['role']) && !empty($input['role'])) {
+                if ($input['role'] === 'professeur') {
+                    $role = 'professeur';
+                } else {
+                    $role = 'etudiant';
+                }
             }
-        }
-        
-        // Générer un username basé sur l'email
-        $username = explode('@', $input['email'])[0];
-        $user = new User();
-        $baseUsername = $username;
-        $counter = 1;
-        while ($user->findByUsername($username)) {
-            $username = $baseUsername . $counter;
-            $counter++;
-        }
-        
-        $data = [
-            'username' => $username,
-            'email' => $input['email'] ?? $_POST['email'] ?? '',
-            'password' => $input['password'] ?? $_POST['password'] ?? '',
-            'first_name' => $input['first_name'] ?? $_POST['first_name'] ?? '',
-            'last_name' => $input['last_name'] ?? $_POST['last_name'] ?? '',
-            'role' => $role,
-            'field_of_study' => $input['field_of_study'] ?? null
-        ];
-        
-        if ($data['password'] !== ($input['confirm_password'] ?? $_POST['confirm_password'] ?? '')) {
-            echo json_encode(['success' => false, 'message' => 'Les mots de passe ne correspondent pas']);
+            
+            // Générer un username basé sur l'email
+            $username = explode('@', $input['email'])[0];
+            $user = new User();
+            $baseUsername = $username;
+            $counter = 1;
+            while ($user->findByUsername($username)) {
+                $username = $baseUsername . $counter;
+                $counter++;
+            }
+            
+            $data = [
+                'username' => $username,
+                'email' => $input['email'] ?? $_POST['email'] ?? '',
+                'password' => $input['password'] ?? $_POST['password'] ?? '',
+                'first_name' => $input['first_name'] ?? $_POST['first_name'] ?? '',
+                'last_name' => $input['last_name'] ?? $_POST['last_name'] ?? '',
+                'role' => $role,
+                'field_of_study' => $input['field_of_study'] ?? null
+            ];
+            
+            if ($data['password'] !== ($input['confirm_password'] ?? $_POST['confirm_password'] ?? '')) {
+                echo json_encode(['success' => false, 'message' => 'Les mots de passe ne correspondent pas']);
+                exit;
+            }
+            
+            if ($user->findByEmail($data['email'])) {
+                echo json_encode(['success' => false, 'message' => 'Cet email est déjà utilisé']);
+                exit;
+            }
+            
+            if ($user->createUser($data)) {
+                echo json_encode(['success' => true, 'redirect' => '/login']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'inscription']);
+            }
             exit;
         }
         
-        if ($user->findByEmail($data['email'])) {
-            echo json_encode(['success' => false, 'message' => 'Cet email est déjà utilisé']);
-            exit;
-        }
-        
-        if ($user->createUser($data)) {
-            echo json_encode(['success' => true, 'redirect' => '/login']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'inscription']);
-        }
+        include ROOT . '/app/views/auth/register.php';
         exit;
     }
-    
-    include ROOT . '/app/views/auth/register.php';
-    exit;
-}
 
     public function logout() {
         // Sauvegarder la langue avant de détruire la session
@@ -105,23 +106,29 @@ public function register() {
         $this->redirect('/login');
     }
 
-    public function profile() {
-        if (!$this->isLoggedIn()) {
-            $this->redirect('/login');
-        }
-        
-        $user = new User();
-        $userData = $user->findById($_SESSION['user_id']);
-        
-        $loan = new Loan();
-        $loans = $loan->getUserLoans($_SESSION['user_id']);
-        
-        $this->view('users/profile', [
-            'user' => $userData,
-            'total_loans' => count($loans),
-            'active_loans' => $this->countActiveLoans($loans)
-        ]);
+public function profile() {
+    if (!$this->isLoggedIn()) {
+        $this->redirect('/login');
     }
+    
+    $user = new User();
+    $userData = $user->findById($_SESSION['user_id']);
+    
+    $loan = new Loan();
+    $loans = $loan->getUserLoans($_SESSION['user_id']);
+    $total_loans = count($loans);
+    $active_loans = 0;
+    foreach ($loans as $l) {
+        if ($l['status'] == 'en_cours') $active_loans++;
+    }
+    
+    $this->viewWithSidebar('users/profile', [
+        'user' => $userData,
+        'total_loans' => $total_loans,
+        'active_loans' => $active_loans,
+        'activePage' => 'profile'
+    ]);
+}
     
     public function exportData() {
         if (!$this->isLoggedIn()) {
@@ -281,6 +288,53 @@ public function register() {
         include ROOT . '/app/views/auth/reset-password.php';
         exit;
     }
+    
+    // ========== NOUVELLE MÉTHODE : SUPPRESSION DE COMPTE ==========
+    public function deleteAccount() {
+        if (!$this->isLoggedIn()) {
+            $this->json(['success' => false, 'message' => 'Non connecté']);
+            return;
+        }
+        
+        $loan = new Loan();
+        $userLoans = $loan->getUserLoans($_SESSION['user_id']);
+        
+        // Vérifier s'il n'a pas d'emprunts actifs
+        $hasActiveLoans = false;
+        foreach ($userLoans as $l) {
+            if ($l['status'] == 'en_cours') {
+                $hasActiveLoans = true;
+                break;
+            }
+        }
+        
+        if ($hasActiveLoans) {
+            $this->json(['success' => false, 'message' => '❌ Vous avez des emprunts en cours. Retournez tous vos livres avant de supprimer votre compte.']);
+            return;
+        }
+        
+        $user = new User();
+        if ($user->delete($_SESSION['user_id'])) {
+            // Supprimer les notifications de l'utilisateur
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("DELETE FROM notifications WHERE user_id = :user_id");
+            $stmt->execute([':user_id' => $_SESSION['user_id']]);
+            
+            // Supprimer les réservations
+            $stmt = $db->prepare("DELETE FROM reservations WHERE user_id = :user_id");
+            $stmt->execute([':user_id' => $_SESSION['user_id']]);
+            
+            // Supprimer les emprunts (déjà retournés)
+            $stmt = $db->prepare("DELETE FROM loans WHERE user_id = :user_id");
+            $stmt->execute([':user_id' => $_SESSION['user_id']]);
+            
+            session_destroy();
+            $this->json(['success' => true, 'message' => '✅ Votre compte a été supprimé avec succès', 'redirect' => '/register']);
+        } else {
+            $this->json(['success' => false, 'message' => '❌ Erreur lors de la suppression du compte']);
+        }
+    }
+    // ========== FIN DE LA NOUVELLE MÉTHODE ==========
     
     private function countActiveLoans($loans) {
         $count = 0;
