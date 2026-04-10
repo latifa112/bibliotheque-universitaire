@@ -1,42 +1,21 @@
 <?php
 class BookController extends Controller {
-public function index() {
-    if (!$this->isLoggedIn()) {
-        $this->redirect('/login');
+    
+    public function index() {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+        }
+        
+        $activePage = 'books'; 
+        $book = new Book();
+        $books = $book->findAll();
+        
+        $this->viewWithSidebar('books/index', [
+            'books' => $books,
+            'search' => '',
+            'activePage' => $activePage
+        ]);
     }
-    
-    $book = new Book();
-    $books = $book->findAll();
-    $totalBooks = count($books);
-    
-    // Récupérer les données pour la sidebar
-    $user = new User();
-    $allUsers = $user->findAll();
-    $totalUsers = count($allUsers);
-    
-    $loan = new Loan();
-    $userLoans = $loan->getUserLoans($_SESSION['user_id']);
-    $activeLoans = 0;
-    foreach ($userLoans as $l) {
-        if ($l['status'] == 'en_cours') $activeLoans++;
-    }
-    
-    $reservation = new Reservation();
-    $userReservations = $reservation->getUserReservations($_SESSION['user_id']);
-    $totalReservations = 0;
-    foreach ($userReservations as $r) {
-        if ($r['status'] == 'active') $totalReservations++;
-    }
-    
-    $this->view('books/index', [
-        'books' => $books,
-        'search' => '',
-        'totalBooks' => $totalBooks,
-        'activeLoans' => $activeLoans,
-        'totalUsers' => $totalUsers,
-        'totalReservations' => $totalReservations
-    ]);
-}
     
     public function search() {
         if (!$this->isLoggedIn()) {
@@ -52,51 +31,53 @@ public function index() {
             $books = $book->findAll();
         }
         
-        $totalBooks = count($books);
-        
-        // Récupérer les données pour la sidebar
-        $user = new User();
-        $allUsers = $user->findAll();
-        $totalUsers = count($allUsers);
-        
-        $loan = new Loan();
-        $userLoans = $loan->getUserLoans($_SESSION['user_id']);
-        $activeLoans = 0;
-        foreach ($userLoans as $l) {
-            if ($l['status'] == 'en_cours') $activeLoans++;
-        }
-        
-        $reservation = new Reservation();
-        $userReservations = $reservation->getUserReservations($_SESSION['user_id']);
-        $totalReservations = 0;
-        foreach ($userReservations as $r) {
-            if ($r['status'] == 'active') $totalReservations++;
-        }
-        
-        $this->view('books/index', [
+        $this->viewWithSidebar('books/index', [
             'books' => $books,
             'search' => $keyword,
-            'totalBooks' => $totalBooks,
-            'activeLoans' => $activeLoans,
-            'totalUsers' => $totalUsers,
-            'totalReservations' => $totalReservations
+            'activePage' => 'books'
         ]);
     }
     
     public function show($id) {
         if (!$this->isLoggedIn()) {
-            $this->json(['success' => false, 'message' => 'Non connecté']);
-            return;
+            $this->redirect('/login');
         }
         
-        $book = new Book();
-        $bookData = $book->findById($id);
+        $bookModel = new Book();
+        $book = $bookModel->findById($id);
         
-        if ($bookData) {
-            $this->json(['success' => true, 'book' => $bookData]);
-        } else {
-            $this->json(['success' => false, 'message' => 'Livre non trouvé']);
+        if (!$book) {
+            $this->redirect('/books');
         }
+        
+        // Vérifier si l'utilisateur a déjà emprunté ce livre
+        $loanModel = new Loan();
+        $userLoan = null;
+        $userLoansList = $loanModel->getUserLoans($_SESSION['user_id']);
+        foreach ($userLoansList as $l) {
+            if ($l['book_id'] == $id && $l['status'] == 'en_cours') {
+                $userLoan = $l;
+                break;
+            }
+        }
+        
+        // Vérifier si l'utilisateur a déjà réservé ce livre
+        $reservationModel = new Reservation();
+        $userReservations = $reservationModel->getUserReservations($_SESSION['user_id']);
+        $userReservation = null;
+        foreach ($userReservations as $r) {
+            if ($r['book_id'] == $id && $r['status'] == 'active') {
+                $userReservation = $r;
+                break;
+            }
+        }
+        
+        $this->viewWithSidebar('books/show', [
+            'book' => $book,
+            'userLoan' => $userLoan,
+            'userReservation' => $userReservation,
+            'activePage' => 'books'
+        ]);
     }
     
     public function create() {
@@ -106,17 +87,36 @@ public function index() {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Récupérer les données JSON
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$input) {
+                $input = $_POST;
+            }
+            
             $book = new Book();
             $data = [
-                'title' => $_POST['title'],
-                'author' => $_POST['author'],
-                'isbn' => $_POST['isbn'] ?? '',
-                'description' => $_POST['description'] ?? '',
-                'category' => $_POST['category'] ?? '',
-                'cover_image' => $_POST['cover_image'] ?? '',
-                'quantity' => $_POST['quantity'] ?? 1,
-                'available_quantity' => $_POST['quantity'] ?? 1
+                'title' => $input['title'] ?? '',
+                'author' => $input['author'] ?? '',
+                'isbn' => $input['isbn'] ?? '',
+                'description' => $input['description'] ?? '',
+                'category' => $input['category'] ?? '',
+                'cover_image' => $input['cover_image'] ?? '',
+                'quantity' => $input['quantity'] ?? 1,
+                'available_quantity' => $input['quantity'] ?? 1
             ];
+            
+            // Validation
+            if (empty($data['title']) || empty($data['author'])) {
+                $this->json(['success' => false, 'message' => 'Le titre et l\'auteur sont obligatoires']);
+                return;
+            }
+            
+            // Validation du format ISBN
+            if (!empty($data['isbn']) && !preg_match('/^[0-9]{10,13}$|^[0-9]{3}-[0-9]{10}$/', $data['isbn'])) {
+                $this->json(['success' => false, 'message' => 'Format ISBN invalide. Utilisez 10 ou 13 chiffres (ex: 978-2-1234-5678-9)']);
+                return;
+            }
             
             if ($book->create($data)) {
                 $this->json(['success' => true, 'message' => 'Livre ajouté avec succès', 'redirect' => '/books']);
@@ -126,7 +126,7 @@ public function index() {
             return;
         }
         
-        $this->view('books/create');
+        $this->viewWithSidebar('books/create', ['activePage' => 'books']);
     }
     
     public function edit($id) {
@@ -135,13 +135,33 @@ public function index() {
             return;
         }
         
-        $book = new Book();
+        $bookModel = new Book();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = json_decode(file_get_contents('php://input'), true);
-            $data['available_quantity'] = $data['quantity'];
+            $input = json_decode(file_get_contents('php://input'), true);
             
-            if ($book->update($id, $data)) {
+            if (!$input) {
+                $input = $_POST;
+            }
+            
+            $data = [
+                'title' => $input['title'] ?? '',
+                'author' => $input['author'] ?? '',
+                'isbn' => $input['isbn'] ?? '',
+                'description' => $input['description'] ?? '',
+                'category' => $input['category'] ?? '',
+                'cover_image' => $input['cover_image'] ?? '',
+                'quantity' => $input['quantity'] ?? 1,
+                'available_quantity' => $input['quantity'] ?? 1
+            ];
+            
+            // Validation du format ISBN
+            if (!empty($data['isbn']) && !preg_match('/^[0-9]{10,13}$|^[0-9]{3}-[0-9]{10}$/', $data['isbn'])) {
+                $this->json(['success' => false, 'message' => 'Format ISBN invalide. Utilisez 10 ou 13 chiffres (ex: 978-2-1234-5678-9)']);
+                return;
+            }
+            
+            if ($bookModel->update($id, $data)) {
                 $this->json(['success' => true, 'message' => 'Livre modifié avec succès', 'redirect' => '/books']);
             } else {
                 $this->json(['success' => false, 'message' => 'Erreur lors de la modification']);
@@ -149,8 +169,15 @@ public function index() {
             return;
         }
         
-        $bookData = $book->findById($id);
-        $this->view('books/edit', ['book' => $bookData]);
+        $bookData = $bookModel->findById($id);
+        if (!$bookData) {
+            $this->redirect('/books');
+        }
+        
+        $this->viewWithSidebar('books/edit', [
+            'book' => $bookData,
+            'activePage' => 'books'
+        ]);
     }
     
     public function delete($id) {
