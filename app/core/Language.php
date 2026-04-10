@@ -48,7 +48,7 @@ class Language {
         if (in_array($lang, $this->availableLangs)) {
             $this->currentLang = $lang;
             $_SESSION['lang'] = $lang;
-            // Stocker dans un cookie qui expire dans 1 an
+            $_SESSION['preferences']['language'] = $lang;
             setcookie($this->cookieName, $lang, time() + 365 * 24 * 3600, '/');
             $this->loadLanguage();
             return true;
