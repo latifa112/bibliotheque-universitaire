@@ -13,11 +13,11 @@ BiblioGest est une application web moderne de gestion de bibliothèque universit
 
 | Rôle | Membres |
 |------|---------|
-| **Chef de projet** | Latifa |
-| **Développeur Backend** | Membre 1, Membre 2 |
-| **Développeur Frontend** | Membre 3, Membre 4 |
-| **Intégrateur** | Membre 5 |
-| **Testeur** | Membre 6 |
+| **Chef de projet** | Nawel |
+| **Développeur Backend** | nawel, latifa |
+| **Développeur Frontend** | ryham, nesrine |
+| **Intégrateur** | maria |
+| **Testeur** | feriel|
 
 ## ✨ Fonctionnalités
 
