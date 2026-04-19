@@ -1,13 +1,21 @@
 <?php
 $activePage = 'settings';
+
+// Initialisation sécurisée de toutes les variables
+$user = $user ?? [];
+$user['first_name'] = $user['first_name'] ?? '';
+$user['last_name'] = $user['last_name'] ?? '';
+$user['email'] = $user['email'] ?? $_SESSION['user_email'] ?? '';
+$user['username'] = $user['username'] ?? $_SESSION['username'] ?? '';
+$user['created_at'] = $user['created_at'] ?? date('Y-m-d H:i:s');
+
 $totalBooks = $totalBooks ?? 0;
 $activeLoans = $activeLoans ?? 0;
 $totalUsers = $totalUsers ?? 0;
 $totalReservations = $totalReservations ?? 0;
-$preferences = $_SESSION['preferences'] ?? ['notifications' => true, 'language' => 'fr', 'theme' => 'dark'];
-$user = $_SESSION;
 $total_loans = $total_loans ?? 0;
 $active_loans = $active_loans ?? 0;
+$preferences = $preferences ?? ['notifications' => true, 'language' => 'fr', 'theme' => 'dark'];
 ?>
 
 <div class="settings-container">
@@ -18,22 +26,22 @@ $active_loans = $active_loans ?? 0;
                 <i class="fas fa-sliders-h"></i>
             </div>
             <div class="hero-text">
-                <h1><?php echo __('settings'); ?></h1>
-                <p><?php echo __('customize_experience'); ?></p>
+                <h1>Paramètres</h1>
+                <p>Personnalisez votre expérience</p>
             </div>
         </div>
         <div class="hero-stats">
             <div class="hero-stat">
                 <div class="stat-number" id="memberDays">-</div>
-                <div class="stat-label"><?php echo __('activity_days'); ?></div>
+                <div class="stat-label">Jours d'activité</div>
             </div>
             <div class="hero-stat">
-                <div class="stat-number" id="totalLoans"><?php echo $total_loans; ?></div>
-                <div class="stat-label"><?php echo __('books_read'); ?></div>
+                <div class="stat-number"><?php echo $total_loans; ?></div>
+                <div class="stat-label">Livres lus</div>
             </div>
             <div class="hero-stat">
-                <div class="stat-number" id="activeLoans"><?php echo $active_loans; ?></div>
-                <div class="stat-label"><?php echo __('in_progress'); ?></div>
+                <div class="stat-number"><?php echo $active_loans; ?></div>
+                <div class="stat-label">En cours</div>
             </div>
         </div>
     </div>
@@ -47,8 +55,8 @@ $active_loans = $active_loans ?? 0;
                     <i class="fas fa-user-astronaut"></i>
                 </div>
                 <div class="header-info">
-                    <h2><?php echo __('personal_info'); ?></h2>
-                    <p><?php echo __('edit_profile_info'); ?></p>
+                    <h2>Informations personnelles</h2>
+                    <p>Modifiez vos informations de profil</p>
                 </div>
             </div>
             <div class="card-body">
@@ -56,23 +64,23 @@ $active_loans = $active_loans ?? 0;
                     <div class="form-row">
                         <div class="input-group">
                             <i class="fas fa-user"></i>
-                            <input type="text" id="first_name" name="first_name" value="<?php echo explode(' ', $user['user_name'])[0] ?? ''; ?>" required>
-                            <label><?php echo __('first_name'); ?></label>
+                            <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($user['first_name']); ?>" required>
+                            <label>Prénom</label>
                         </div>
                         <div class="input-group">
                             <i class="fas fa-user"></i>
-                            <input type="text" id="last_name" name="last_name" value="<?php echo explode(' ', $user['user_name'])[1] ?? ''; ?>" required>
-                            <label><?php echo __('last_name'); ?></label>
+                            <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($user['last_name']); ?>" required>
+                            <label>Nom</label>
                         </div>
                     </div>
                     <div class="input-group">
                         <i class="fas fa-envelope"></i>
-                        <input type="email" id="email" name="email" value="<?php echo $user['user_email']; ?>" required>
-                        <label><?php echo __('email'); ?></label>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+                        <label>Email</label>
                     </div>
                     <button type="submit" class="btn-submit">
                         <i class="fas fa-save"></i>
-                        <span><?php echo __('save_changes'); ?></span>
+                        <span>Enregistrer</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
@@ -87,8 +95,8 @@ $active_loans = $active_loans ?? 0;
                     <i class="fas fa-shield-alt"></i>
                 </div>
                 <div class="header-info">
-                    <h2><?php echo __('security'); ?></h2>
-                    <p><?php echo __('protect_account'); ?></p>
+                    <h2>Sécurité</h2>
+                    <p>Protégez votre compte</p>
                 </div>
             </div>
             <div class="card-body">
@@ -96,12 +104,12 @@ $active_loans = $active_loans ?? 0;
                     <div class="input-group">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="current_password" name="current_password" required>
-                        <label><?php echo __('current_password'); ?></label>
+                        <label>Mot de passe actuel</label>
                     </div>
                     <div class="input-group">
                         <i class="fas fa-key"></i>
                         <input type="password" id="new_password" name="new_password" required>
-                        <label><?php echo __('new_password'); ?></label>
+                        <label>Nouveau mot de passe</label>
                     </div>
                     <div class="password-strength-container">
                         <div class="password-strength">
@@ -112,11 +120,11 @@ $active_loans = $active_loans ?? 0;
                     <div class="input-group">
                         <i class="fas fa-check-circle"></i>
                         <input type="password" id="confirm_password" name="confirm_password" required>
-                        <label><?php echo __('confirm_password'); ?></label>
+                        <label>Confirmer le mot de passe</label>
                     </div>
                     <button type="submit" class="btn-submit">
                         <i class="fas fa-key"></i>
-                        <span><?php echo __('change_password'); ?></span>
+                        <span>Changer le mot de passe</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
@@ -131,8 +139,8 @@ $active_loans = $active_loans ?? 0;
                     <i class="fas fa-palette"></i>
                 </div>
                 <div class="header-info">
-                    <h2><?php echo __('appearance_preferences'); ?></h2>
-                    <p><?php echo __('customize_interface'); ?></p>
+                    <h2>Apparence</h2>
+                    <p>Personnalisez l'interface</p>
                 </div>
             </div>
             <div class="card-body">
@@ -142,12 +150,12 @@ $active_loans = $active_loans ?? 0;
                             <div class="toggle-info">
                                 <i class="fas fa-bell"></i>
                                 <div>
-                                    <span class="toggle-label"><?php echo __('notifications'); ?></span>
-                                    <span class="toggle-desc"><?php echo __('receive_alerts'); ?></span>
+                                    <span class="toggle-label">Notifications</span>
+                                    <span class="toggle-desc">Recevoir des alertes</span>
                                 </div>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" name="notifications" <?php echo $preferences['notifications'] ? 'checked' : ''; ?>>
+                                <input type="checkbox" name="notifications" <?php echo (isset($preferences['notifications']) && $preferences['notifications']) ? 'checked' : ''; ?>>
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -156,8 +164,8 @@ $active_loans = $active_loans ?? 0;
                         <div class="select-item">
                             <i class="fas fa-globe"></i>
                             <div class="select-info">
-                                <span class="select-label"><?php echo __('language'); ?></span>
-                                <span class="select-desc"><?php echo __('choose_language'); ?></span>
+                                <span class="select-label">Langue</span>
+                                <span class="select-desc">Choisissez votre langue</span>
                             </div>
                             <select id="language" name="language">
                                 <option value="fr" <?php echo $preferences['language'] == 'fr' ? 'selected' : ''; ?>>🇫🇷 Français</option>
@@ -169,16 +177,16 @@ $active_loans = $active_loans ?? 0;
                     <div class="theme-options">
                         <div class="theme-option dark <?php echo $preferences['theme'] == 'dark' ? 'active' : ''; ?>" data-theme="dark">
                             <i class="fas fa-moon"></i>
-                            <span><?php echo __('dark_theme'); ?></span>
+                            <span>Sombre</span>
                         </div>
                         <div class="theme-option light <?php echo $preferences['theme'] == 'light' ? 'active' : ''; ?>" data-theme="light">
                             <i class="fas fa-sun"></i>
-                            <span><?php echo __('light_theme'); ?></span>
+                            <span>Clair</span>
                         </div>
                     </div>
                     <button type="submit" class="btn-submit">
                         <i class="fas fa-save"></i>
-                        <span><?php echo __('save_preferences'); ?></span>
+                        <span>Enregistrer</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
@@ -193,8 +201,8 @@ $active_loans = $active_loans ?? 0;
                     <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="header-info">
-                    <h2><?php echo __('statistics'); ?></h2>
-                    <p><?php echo __('your_reading_journey'); ?></p>
+                    <h2>Statistiques</h2>
+                    <p>Votre parcours de lecture</p>
                 </div>
             </div>
             <div class="card-body">
@@ -221,16 +229,8 @@ $active_loans = $active_loans ?? 0;
                                 <i class="fas fa-calendar-alt"></i>
                             </div>
                             <div class="stat-details">
-                                <span class="stat-label"><?php echo __('member_since'); ?></span>
-                                <span class="stat-value">
-                                    <?php 
-                                    if (isset($user['created_at']) && !empty($user['created_at'])) {
-                                        echo date('d/m/Y', strtotime($user['created_at']));
-                                    } else {
-                                        echo date('d/m/Y');
-                                    }
-                                    ?>
-                                </span>
+                                <span class="stat-label">Membre depuis</span>
+                                <span class="stat-value"><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></span>
                             </div>
                         </div>
                         <div class="stat-item-modern">
@@ -238,7 +238,7 @@ $active_loans = $active_loans ?? 0;
                                 <i class="fas fa-book-reader"></i>
                             </div>
                             <div class="stat-details">
-                                <span class="stat-label"><?php echo __('books_borrowed'); ?></span>
+                                <span class="stat-label">Livres empruntés</span>
                                 <span class="stat-value"><?php echo $total_loans; ?></span>
                             </div>
                         </div>
@@ -247,7 +247,7 @@ $active_loans = $active_loans ?? 0;
                                 <i class="fas fa-hourglass-half"></i>
                             </div>
                             <div class="stat-details">
-                                <span class="stat-label"><?php echo __('active_loans'); ?></span>
+                                <span class="stat-label">Emprunts actifs</span>
                                 <span class="stat-value"><?php echo $active_loans; ?></span>
                             </div>
                         </div>
@@ -256,7 +256,7 @@ $active_loans = $active_loans ?? 0;
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div class="stat-details">
-                                <span class="stat-label"><?php echo __('returns_made'); ?></span>
+                                <span class="stat-label">Retours effectués</span>
                                 <span class="stat-value"><?php echo $total_loans - $active_loans; ?></span>
                             </div>
                         </div>
@@ -273,17 +273,17 @@ $active_loans = $active_loans ?? 0;
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
                 <div class="header-info">
-                    <h2><?php echo __('danger_zone'); ?></h2>
-                    <p><?php echo __('irreversible_actions'); ?></p>
+                    <h2>Zone dangereuse</h2>
+                    <p>Actions irréversibles</p>
                 </div>
             </div>
             <div class="card-body">
                 <div class="danger-content">
                     <i class="fas fa-skull"></i>
-                    <p><?php echo __('delete_account_warning'); ?></p>
+                    <p>La suppression de votre compte est définitive et irréversible.</p>
                     <button class="btn-danger" onclick="deleteAccount()">
                         <i class="fas fa-trash-alt"></i>
-                        <?php echo __('delete_account'); ?>
+                        Supprimer mon compte
                     </button>
                 </div>
             </div>
@@ -292,13 +292,11 @@ $active_loans = $active_loans ?? 0;
 </div>
 
 <style>
-/* Tous tes styles CSS restent ici inchangés */
 .settings-container {
     max-width: 1400px;
     margin: 0 auto;
 }
 
-/* Hero Section */
 .settings-hero {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.05));
     border-radius: 32px;
@@ -359,7 +357,7 @@ $active_loans = $active_loans ?? 0;
 .hero-stat .stat-number {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .hero-stat .stat-label {
@@ -367,14 +365,12 @@ $active_loans = $active_loans ?? 0;
     color: rgba(255, 255, 255, 0.5);
 }
 
-/* Grid */
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
 }
 
-/* Cartes */
 .settings-card {
     position: relative;
     background: var(--card-bg);
@@ -386,7 +382,7 @@ $active_loans = $active_loans ?? 0;
 
 .settings-card:hover {
     transform: translateY(-5px);
-    border-color: var(--primary);
+    border-color: #6366f1;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -434,7 +430,6 @@ $active_loans = $active_loans ?? 0;
     padding: 1.5rem;
 }
 
-/* Formulaires modernes */
 .modern-form .input-group {
     position: relative;
     margin-bottom: 1.25rem;
@@ -445,7 +440,7 @@ $active_loans = $active_loans ?? 0;
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--primary);
+    color: #6366f1;
     font-size: 1rem;
     z-index: 2;
 }
@@ -463,7 +458,7 @@ $active_loans = $active_loans ?? 0;
 
 .modern-form .input-group input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: #6366f1;
     background: var(--bg-secondary);
 }
 
@@ -483,7 +478,7 @@ $active_loans = $active_loans ?? 0;
     font-size: 0.7rem;
     background: var(--bg-secondary);
     padding: 0 0.25rem;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .form-row {
@@ -515,7 +510,6 @@ $active_loans = $active_loans ?? 0;
     box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
 }
 
-/* Password strength */
 .password-strength-container {
     margin: -0.5rem 0 1rem 0;
 }
@@ -539,7 +533,6 @@ $active_loans = $active_loans ?? 0;
     color: rgba(255, 255, 255, 0.5);
 }
 
-/* Toggle switch */
 .toggle-group {
     margin-bottom: 1.5rem;
 }
@@ -561,7 +554,7 @@ $active_loans = $active_loans ?? 0;
 
 .toggle-info i {
     font-size: 1.2rem;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .toggle-label {
@@ -620,7 +613,6 @@ input:checked + .slider:before {
     transform: translateX(26px);
 }
 
-/* Select group */
 .select-group {
     margin-bottom: 1.5rem;
 }
@@ -636,7 +628,7 @@ input:checked + .slider:before {
 
 .select-item i {
     font-size: 1.2rem;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .select-info {
@@ -663,7 +655,6 @@ input:checked + .slider:before {
     cursor: pointer;
 }
 
-/* Theme options */
 .theme-options {
     display: flex;
     gap: 1rem;
@@ -689,11 +680,10 @@ input:checked + .slider:before {
 }
 
 .theme-option.active {
-    border-color: var(--primary);
+    border-color: #6366f1;
     background: rgba(99, 102, 241, 0.1);
 }
 
-/* Stats section */
 .stats-grid-custom {
     display: flex;
     gap: 1.5rem;
@@ -728,7 +718,7 @@ input:checked + .slider:before {
 .circle-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .circle-label {
@@ -760,7 +750,7 @@ input:checked + .slider:before {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--primary);
+    color: #6366f1;
 }
 
 .stat-details {
@@ -777,10 +767,9 @@ input:checked + .slider:before {
 
 .stat-value {
     font-weight: 600;
-    color: var(--primary);
+    color: #6366f1;
 }
 
-/* Danger zone */
 .danger-card {
     border-color: rgba(239, 68, 68, 0.3);
 }
@@ -825,22 +814,16 @@ input:checked + .slider:before {
     transform: translateY(-2px);
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
     .settings-grid {
         grid-template-columns: 1fr;
-        gap: 1rem;
     }
-    
     .form-row {
         grid-template-columns: 1fr;
-        gap: 1rem;
     }
-    
     .stats-grid-custom {
         flex-direction: column;
     }
-    
     .hero-stats {
         width: 100%;
         justify-content: space-around;
@@ -887,7 +870,7 @@ if (passwordInput) {
     });
 }
 
-// Thème options - changement immédiat
+// Thème options
 document.querySelectorAll('.theme-option').forEach(option => {
     option.addEventListener('click', function() {
         document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
@@ -897,186 +880,126 @@ document.querySelectorAll('.theme-option').forEach(option => {
         if (theme === 'light') {
             document.body.classList.remove('dark-theme');
             document.body.classList.add('light-theme');
-            document.documentElement.classList.remove('dark-theme');
-            document.documentElement.classList.add('light-theme');
         } else {
             document.body.classList.remove('light-theme');
             document.body.classList.add('dark-theme');
-            document.documentElement.classList.remove('light-theme');
-            document.documentElement.classList.add('dark-theme');
         }
-        
         localStorage.setItem('theme', theme);
     });
 });
 
-// Charger le thème sauvegardé
+// Charger le thème
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme) {
     if (savedTheme === 'light') {
         document.body.classList.remove('dark-theme');
         document.body.classList.add('light-theme');
-        document.documentElement.classList.remove('dark-theme');
-        document.documentElement.classList.add('light-theme');
     } else {
         document.body.classList.remove('light-theme');
         document.body.classList.add('dark-theme');
-        document.documentElement.classList.remove('light-theme');
-        document.documentElement.classList.add('dark-theme');
     }
     document.querySelectorAll('.theme-option').forEach(opt => {
-        if (opt.dataset.theme === savedTheme) {
-            opt.classList.add('active');
-        } else {
-            opt.classList.remove('active');
-        }
+        if (opt.dataset.theme === savedTheme) opt.classList.add('active');
+        else opt.classList.remove('active');
     });
 }
 
 // Formulaire profil
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(e.target);
     const data = {
-        first_name: formData.get('first_name'),
-        last_name: formData.get('last_name'),
-        email: formData.get('email')
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        email: document.getElementById('email').value
     };
     
-    try {
-        const response = await fetch('/settings/update-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ ' + result.message);
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            alert('❌ ' + result.message);
-        }
-    } catch (error) {
-        alert('Erreur de connexion');
-    }
+    const response = await fetch('/settings/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    alert(result.message);
+    if (result.success) location.reload();
 });
 
 // Formulaire mot de passe
 document.getElementById('passwordForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const newPass = document.getElementById('new_password').value;
+    const confirmPass = document.getElementById('confirm_password').value;
     
-    const newPassword = document.getElementById('new_password').value;
-    const confirmPassword = document.getElementById('confirm_password').value;
-    
-    if (newPassword !== confirmPassword) {
-        alert('❌ Les mots de passe ne correspondent pas');
+    if (newPass !== confirmPass) {
+        alert('Les mots de passe ne correspondent pas');
         return;
     }
     
-    const formData = new FormData(e.target);
     const data = {
-        current_password: formData.get('current_password'),
-        new_password: formData.get('new_password')
+        current_password: document.getElementById('current_password').value,
+        new_password: newPass
     };
     
-    try {
-        const response = await fetch('/settings/update-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ ' + result.message);
-            e.target.reset();
-        } else {
-            alert('❌ ' + result.message);
-        }
-    } catch (error) {
-        alert('Erreur de connexion');
-    }
+    const response = await fetch('/settings/update-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    alert(result.message);
+    if (result.success) document.getElementById('passwordForm').reset();
 });
 
 // Formulaire préférences
 document.getElementById('preferencesForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const formData = new FormData(e.target);
     const selectedTheme = document.querySelector('.theme-option.active')?.dataset.theme || 'dark';
-    const selectedLanguage = formData.get('language');
-    
     const data = {
-        notifications: formData.get('notifications') === 'on',
-        language: selectedLanguage,
+        notifications: document.querySelector('input[name="notifications"]')?.checked || false,
+        language: document.getElementById('language')?.value || 'fr',
         theme: selectedTheme
     };
     
-    try {
-        const response = await fetch('/settings/update-preferences', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-            alert('✅ ' + result.message);
-            
-            if (selectedTheme === 'light') {
-                document.body.classList.remove('dark-theme');
-                document.body.classList.add('light-theme');
-                document.documentElement.classList.remove('dark-theme');
-                document.documentElement.classList.add('light-theme');
-            } else {
-                document.body.classList.remove('light-theme');
-                document.body.classList.add('dark-theme');
-                document.documentElement.classList.remove('light-theme');
-                document.documentElement.classList.add('dark-theme');
-            }
-            
-            if (selectedLanguage !== '<?php echo $preferences['language']; ?>') {
-                setTimeout(() => {
-                    location.reload();
-                }, 500);
-            }
-        } else {
-            alert('❌ ' + result.message);
-        }
-    } catch (error) {
-        alert('Erreur de connexion');
+    const response = await fetch('/settings/update-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    alert(result.message);
+    if (result.success && result.language !== '<?php echo $preferences['language']; ?>') {
+        location.reload();
     }
 });
 
-// Mettre à jour le cercle de progression
+// Cercle de progression
 document.addEventListener('DOMContentLoaded', function() {
     const totalLoans = <?php echo $total_loans; ?>;
     const activeLoans = <?php echo $active_loans; ?>;
     
     if (totalLoans > 0) {
-        const completionRate = Math.round((activeLoans / totalLoans) * 100);
+        const completionRate = Math.round(((totalLoans - activeLoans) / totalLoans) * 100);
         const completionElement = document.getElementById('completionRate');
-        if (completionElement) {
-            completionElement.textContent = completionRate;
-        }
+        if (completionElement) completionElement.textContent = completionRate;
         
         const circle = document.querySelector('.progress-ring');
         if (circle) {
-            const radius = 45;
-            const circumference = 2 * Math.PI * radius;
+            const circumference = 2 * Math.PI * 45;
             const offset = circumference - (completionRate / 100) * circumference;
             circle.style.strokeDashoffset = offset;
         }
     }
 });
 
-// Supprimer le compte
-async function deleteAccount() {
+// Jours d'activité
+const createdDate = '<?php echo $user['created_at']; ?>';
+if (createdDate) {
+    const days = Math.floor((new Date() - new Date(createdDate)) / (1000 * 60 * 60 * 24));
+    document.getElementById('memberDays').textContent = days;
+}
+
+function deleteAccount() {
     if (!confirm('⚠️ Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible !')) return;
     if (!confirm('⚠️ DERNIÈRE CHANCE : Voulez-vous vraiment supprimer votre compte définitivement ?')) return;
-    
     alert('Cette fonctionnalité sera bientôt disponible');
 }
 </script>

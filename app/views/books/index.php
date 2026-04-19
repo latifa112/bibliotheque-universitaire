@@ -838,14 +838,4 @@ function showBookDetails(bookId) {
 
 console.log('✅ Recherche avec délai de 10 secondes activée');
 </script>
-document.getElementById('searchInput').addEventListener('input', function() {
-    searchBooks();
-});
 
-document.getElementById('searchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        clearTimeout(searchTimeout);
-        searchNow();
-    }
-});
-</script>

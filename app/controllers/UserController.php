@@ -2,35 +2,40 @@
 require_once ROOT . '/app/core/Mailer.php';
 
 class UserController extends Controller {
-    public function login() {
-        if ($this->isLoggedIn()) {
-            $this->redirect('/dashboard');
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $input = json_decode(file_get_contents('php://input'), true);
-            $email = $input['email'] ?? $_POST['email'] ?? '';
-            $password = $input['password'] ?? $_POST['password'] ?? '';
-            
-            $user = new User();
-            $userData = $user->authenticate($email, $password);
-            
-            if ($userData) {
-                $_SESSION['user_id'] = $userData['id'];
-                $_SESSION['user_name'] = $userData['first_name'] . ' ' . $userData['last_name'];
-                $_SESSION['user_role'] = $userData['role'];
-                $_SESSION['user_email'] = $userData['email'];
-                
-                echo json_encode(['success' => true, 'redirect' => '/dashboard']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Email ou mot de passe incorrect']);
-            }
-            exit;
-        }
-        
-        include ROOT . '/app/views/auth/login.php';
-        exit;
+    
+public function login() {
+    // Vérifier si déjà connecté
+    if (isset($_SESSION['user_id'])) {
+        header('Location: /dashboard');
+        exit();
     }
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $email = $input['email'] ?? $_POST['email'] ?? '';
+        $password = $input['password'] ?? $_POST['password'] ?? '';
+        
+        $user = new User();
+        $userData = $user->authenticate($email, $password);
+        
+        if ($userData) {
+            $_SESSION['user_id'] = $userData['id'];
+            $_SESSION['user_name'] = ($userData['first_name'] ?? '') . ' ' . ($userData['last_name'] ?? '');
+            $_SESSION['user_role'] = $userData['role'];
+            $_SESSION['user_email'] = $userData['email'];
+            $_SESSION['username'] = $userData['username'];
+            
+            echo json_encode(['success' => true, 'redirect' => '/dashboard']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Email ou mot de passe incorrect']);
+        }
+        exit();
+    }
+    
+    // Afficher la page de login
+    include ROOT . '/app/views/auth/login.php';
+    exit();
+}
     
     public function register() {
         if ($this->isLoggedIn()) {

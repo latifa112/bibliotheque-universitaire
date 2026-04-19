@@ -5,6 +5,32 @@ $totalBooks = $totalBooks ?? 0;
 $activeLoans = $activeLoans ?? 0;
 $totalUsers = $totalUsers ?? 0;
 $totalReservations = $totalReservations ?? 0;
+
+// Fonction de traduction simple si __() n'existe pas
+if (!function_exists('__')) {
+    function __($key) {
+        $translations = [
+            'total_books' => 'Livres au catalogue',
+            'active_users' => 'Utilisateurs actifs',
+            'my_loans' => 'Mes emprunts',
+            'reservations' => 'Mes réservations',
+            'welcome' => 'Bienvenue',
+            'email' => 'Email',
+            'role' => 'Rôle',
+            'member_since' => 'Membre depuis',
+            'explore_catalogue' => 'Explorer le catalogue',
+            'view_my_loans' => 'Voir mes emprunts',
+            'new_arrivals' => 'Nouveautés',
+            'available' => 'Disponible',
+            'unavailable' => 'Indisponible',
+            'borrow' => 'Emprunter',
+            'reserve' => 'Réserver',
+            'confirm' => 'Confirmez-vous cette action ?',
+            'error' => 'Une erreur est survenue'
+        ];
+        return $translations[$key] ?? $key;
+    }
+}
 ?>
 
 <!-- Stats Cards -->
@@ -14,7 +40,7 @@ $totalReservations = $totalReservations ?? 0;
             <i class="fas fa-book-open"></i>
         </div>
         <div class="stat-info">
-            <h3><?php echo number_format($stats['total_books']); ?></h3>
+            <h3><?php echo number_format($stats['total_books'] ?? $totalBooks); ?></h3>
             <p><?php echo __('total_books'); ?></p>
         </div>
     </div>
@@ -36,7 +62,7 @@ $totalReservations = $totalReservations ?? 0;
             <i class="fas fa-book-reader"></i>
         </div>
         <div class="stat-info">
-            <h3><?php echo $stats['my_loans']; ?></h3>
+            <h3><?php echo $stats['my_loans'] ?? $activeLoans; ?></h3>
             <p><?php echo __('my_loans'); ?></p>
         </div>
     </div>
@@ -46,7 +72,7 @@ $totalReservations = $totalReservations ?? 0;
             <i class="fas fa-calendar-alt"></i>
         </div>
         <div class="stat-info">
-            <h3><?php echo $stats['reservations'] ?? 0; ?></h3>
+            <h3><?php echo $stats['reservations'] ?? $totalReservations; ?></h3>
             <p><?php echo __('reservations'); ?></p>
         </div>
     </div>
@@ -59,7 +85,7 @@ $totalReservations = $totalReservations ?? 0;
             <div class="welcome-text">
                 <h2>
                     <i class="fas fa-hand-wave" style="margin-right: 0.75rem; color: var(--primary);"></i>
-                    <?php echo __('welcome'); ?>, <?php echo $_SESSION['user_name']; ?>
+                    <?php echo __('welcome'); ?>, <?php echo $_SESSION['user_name'] ?? 'Utilisateur'; ?>
                 </h2>
                 <div class="user-info-grid">
                     <div class="user-info-item">
@@ -68,7 +94,7 @@ $totalReservations = $totalReservations ?? 0;
                         </div>
                         <div class="info-details">
                             <span class="info-label"><?php echo __('email'); ?></span>
-                            <span class="info-value"><?php echo $_SESSION['user_email']; ?></span>
+                            <span class="info-value"><?php echo $_SESSION['user_email'] ?? 'Non défini'; ?></span>
                         </div>
                     </div>
                     <div class="user-info-item">
@@ -77,10 +103,10 @@ $totalReservations = $totalReservations ?? 0;
                         </div>
                         <div class="info-details">
                             <span class="info-label"><?php echo __('role'); ?></span>
-                            <span class="info-value role-<?php echo strtolower($_SESSION['user_role']); ?>">
+                            <span class="info-value role-<?php echo strtolower($_SESSION['user_role'] ?? 'etudiant'); ?>">
                                 <?php 
                                 $roles = ['admin' => 'Administrateur', 'etudiant' => 'Étudiant', 'professeur' => 'Professeur'];
-                                echo $roles[strtolower($_SESSION['user_role'])] ?? ucfirst($_SESSION['user_role']); 
+                                echo $roles[strtolower($_SESSION['user_role'] ?? 'etudiant')] ?? ucfirst($_SESSION['user_role'] ?? 'Étudiant'); 
                                 ?>
                             </span>
                         </div>
@@ -121,42 +147,49 @@ $totalReservations = $totalReservations ?? 0;
         </h2>
     </div>
     <div class="books-grid">
-        <?php foreach ($recent_books as $index => $book): ?>
-        <div class="book-card">
-            <div class="book-cover" style="background-image: url('<?php echo $book['cover_image']; ?>')">
-                <?php if ($index == 0): ?>
-                <div class="book-badge">
-                    <i class="fas fa-crown"></i> Nouveau
-                </div>
-                <?php endif; ?>
-            </div>
-            <div class="book-info">
-                <h4 class="book-title"><?php echo htmlspecialchars($book['title']); ?></h4>
-                <p class="book-author">
-                    <i class="fas fa-user-pen"></i> <?php echo htmlspecialchars($book['author']); ?>
-                </p>
-                <div class="book-meta">
-                    <span class="book-isbn">
-                        <i class="fas fa-barcode"></i> <?php echo $book['isbn']; ?>
-                    </span>
-                    <span class="badge <?php echo $book['available_quantity'] > 0 ? 'badge-success' : 'badge-warning'; ?>">
-                        <i class="fas <?php echo $book['available_quantity'] > 0 ? 'fa-check-circle' : 'fa-clock'; ?>"></i>
-                        <?php echo $book['available_quantity'] > 0 ? __('available') : __('unavailable'); ?>
-                    </span>
-                </div>
-                <div class="book-actions">
-                    <?php if ($book['available_quantity'] > 0): ?>
-                    <button class="book-action-btn borrow" onclick="borrowBook(<?php echo $book['id']; ?>)">
-                        <i class="fas fa-book-reader"></i> <?php echo __('borrow'); ?>
-                    </button>
+        <?php if (!empty($recent_books)): ?>
+            <?php foreach ($recent_books as $index => $book): ?>
+            <div class="book-card">
+                <div class="book-cover" style="background-image: url('<?php echo $book['cover_image'] ?? '/assets/images/default-cover.jpg'; ?>')">
+                    <?php if ($index == 0): ?>
+                    <div class="book-badge">
+                        <i class="fas fa-crown"></i> Nouveau
+                    </div>
                     <?php endif; ?>
-                    <button class="book-action-btn reserve" onclick="reserveBook(<?php echo $book['id']; ?>)">
-                        <i class="fas fa-calendar-check"></i> <?php echo __('reserve'); ?>
-                    </button>
+                </div>
+                <div class="book-info">
+                    <h4 class="book-title"><?php echo htmlspecialchars($book['title'] ?? 'Titre inconnu'); ?></h4>
+                    <p class="book-author">
+                        <i class="fas fa-user-pen"></i> <?php echo htmlspecialchars($book['author'] ?? 'Auteur inconnu'); ?>
+                    </p>
+                    <div class="book-meta">
+                        <span class="book-isbn">
+                            <i class="fas fa-barcode"></i> <?php echo $book['isbn'] ?? 'N/A'; ?>
+                        </span>
+                        <span class="badge <?php echo ($book['available_quantity'] ?? 0) > 0 ? 'badge-success' : 'badge-warning'; ?>">
+                            <i class="fas <?php echo ($book['available_quantity'] ?? 0) > 0 ? 'fa-check-circle' : 'fa-clock'; ?>"></i>
+                            <?php echo ($book['available_quantity'] ?? 0) > 0 ? __('available') : __('unavailable'); ?>
+                        </span>
+                    </div>
+                    <div class="book-actions">
+                        <?php if (($book['available_quantity'] ?? 0) > 0): ?>
+                        <button class="book-action-btn borrow" onclick="borrowBook(<?php echo $book['id']; ?>)">
+                            <i class="fas fa-book-reader"></i> <?php echo __('borrow'); ?>
+                        </button>
+                        <?php endif; ?>
+                        <button class="book-action-btn reserve" onclick="reserveBook(<?php echo $book['id']; ?>)">
+                            <i class="fas fa-calendar-check"></i> <?php echo __('reserve'); ?>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="empty-recommendations">
+                <i class="fas fa-book"></i>
+                <p>Aucun livre disponible pour le moment.</p>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -540,90 +573,10 @@ $totalReservations = $totalReservations ?? 0;
     margin-top: 1rem;
 }
 
-.recommendation-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.recommendation-card:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary);
-    box-shadow: var(--shadow-lg);
-}
-
-.recommendation-cover {
-    height: 200px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-}
-
-.recommendation-reason {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
-    padding: 1rem 0.75rem 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.7rem;
-    color: white;
-}
-
-.recommendation-info {
-    padding: 1rem;
-}
-
-.recommendation-title {
-    font-size: 1rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.recommendation-author {
-    font-size: 0.8rem;
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
     color: var(--primary);
-    margin-bottom: 0.75rem;
-}
-
-.recommendation-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-recommend-borrow, .btn-recommend-reserve {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 500;
-    transition: all 0.3s;
-}
-
-.btn-recommend-borrow {
-    background: linear-gradient(135deg, #10b981, #059669);
-    color: white;
-}
-
-.btn-recommend-reserve {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-}
-
-.btn-recommend-borrow:hover, .btn-recommend-reserve:hover {
-    transform: translateY(-2px);
 }
 
 .empty-recommendations {
@@ -638,17 +591,11 @@ $totalReservations = $totalReservations ?? 0;
     color: var(--primary);
     margin-bottom: 1rem;
 }
-
-.loading-spinner {
-    text-align: center;
-    padding: 2rem;
-    color: var(--primary);
-}
 </style>
 
 <script>
 async function borrowBook(bookId) {
-    if (!confirm('<?php echo __('confirm'); ?>')) return;
+    if (!confirm('Voulez-vous vraiment emprunter ce livre ?')) return;
     
     try {
         const response = await fetch('/loans/borrow', {
@@ -665,12 +612,12 @@ async function borrowBook(bookId) {
             alert('❌ ' + result.message);
         }
     } catch (error) {
-        alert('<?php echo __('error'); ?>');
+        alert('Une erreur est survenue');
     }
 }
 
 function reserveBook(bookId) {
-    alert('📅 <?php echo __('reserve'); ?>');
+    alert('📅 Fonction de réservation à venir');
 }
 
 // Charger les recommandations
@@ -679,8 +626,9 @@ async function loadRecommendations() {
         const response = await fetch('/api/recommendations');
         const data = await response.json();
         
-        if (data.success && data.recommendations.length > 0) {
-            displayRecommendations(data.recommendations);
+        if (data.success && data.recommendations && data.recommendations.length > 0) {
+            const grid = document.getElementById('recommendationsGrid');
+            grid.innerHTML = '<div class="empty-recommendations"><i class="fas fa-lightbulb"></i><p>Empruntez des livres pour obtenir des recommandations !</p></div>';
         } else {
             document.getElementById('recommendationsGrid').innerHTML = `
                 <div class="empty-recommendations">
@@ -698,46 +646,6 @@ async function loadRecommendations() {
             </div>
         `;
     }
-}
-
-function displayRecommendations(books) {
-    const grid = document.getElementById('recommendationsGrid');
-    grid.innerHTML = books.map(book => `
-        <div class="recommendation-card" data-book-id="${book.id}">
-            <div class="recommendation-cover" style="background-image: url('${book.cover_image}')">
-                <div class="recommendation-reason">
-                    <i class="fas fa-${getReasonIcon(book.reason)}"></i>
-                    <span>${book.reason}</span>
-                </div>
-            </div>
-            <div class="recommendation-info">
-                <h4 class="recommendation-title">${escapeHtml(book.title)}</h4>
-                <p class="recommendation-author">${escapeHtml(book.author)}</p>
-                <div class="recommendation-meta">
-                    <span class="badge ${book.available_quantity > 0 ? 'badge-success' : 'badge-warning'}">
-                        <i class="fas ${book.available_quantity > 0 ? 'fa-check-circle' : 'fa-clock'}"></i>
-                        ${book.available_quantity > 0 ? 'Disponible' : 'Indisponible'}
-                    </span>
-                    ${book.available_quantity > 0 ? 
-                        `<button class="btn-recommend-borrow" onclick="borrowBook(${book.id})">
-                            <i class="fas fa-book-reader"></i> Emprunter
-                        </button>` : 
-                        `<button class="btn-recommend-reserve" onclick="reserveBook(${book.id})">
-                            <i class="fas fa-clock"></i> Réserver
-                        </button>`
-                    }
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function getReasonIcon(reason) {
-    if (reason.includes('filière')) return 'graduation-cap';
-    if (reason.includes('aimez')) return 'heart';
-    if (reason.includes('populaire')) return 'fire';
-    if (reason.includes('nouvelle')) return 'star';
-    return 'magic';
 }
 
 // Charger les recommandations au chargement de la page

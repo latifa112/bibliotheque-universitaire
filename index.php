@@ -22,14 +22,20 @@ spl_autoload_register(function($class) {
     }
 });
 
-// Démarrer la session
-session_start();
+// Démarrer la session - Version simplifiée
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('BIBLIOGEST_SESSION');
+    session_start();
+}
 
 // Définir le charset pour les réponses JSON
 header('Content-Type: text/html; charset=utf-8');
 
-require_once ROOT . '/app/core/Language.php';
-Language::getInstance();
+// Language (si le fichier existe)
+if (file_exists(ROOT . '/app/core/Language.php')) {
+    require_once ROOT . '/app/core/Language.php';
+    Language::getInstance();
+}
 
 // Router
 $router = new Router();

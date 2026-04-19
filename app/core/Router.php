@@ -58,24 +58,43 @@ class Router {
         } else {
             // Vérifier si c'est une URL avec paramètre (ex: books/edit/1)
             $parts = explode('/', $url);
+            
+            // Route: books/edit/ID
             if (count($parts) == 3 && $parts[0] == 'books' && $parts[1] == 'edit') {
                 $this->controller = 'BookController';
                 $this->action = 'edit';
                 $this->params = [$parts[2]];
             } 
-            // Vérifier si c'est une URL avec paramètre pour les livres (ex: books/1)
+            // Route: books/show/ID
+            elseif (count($parts) == 3 && $parts[0] == 'books' && $parts[1] == 'show') {
+                $this->controller = 'BookController';
+                $this->action = 'show';
+                $this->params = [$parts[2]];
+            }
+            // Route: books/ID (afficher un livre)
             elseif (count($parts) == 2 && $parts[0] == 'books' && is_numeric($parts[1])) {
                 $this->controller = 'BookController';
                 $this->action = 'show';
                 $this->params = [$parts[1]];
             } 
-            // Vérifier si c'est une recherche avec paramètre (ex: books/search?q=livre)
+            // Route: books/search
             elseif (count($parts) == 2 && $parts[0] == 'books' && $parts[1] == 'search') {
                 $this->controller = 'BookController';
                 $this->action = 'search';
             }
+            // Route: books/delete/ID
+            elseif (count($parts) == 3 && $parts[0] == 'books' && $parts[1] == 'delete') {
+                $this->controller = 'BookController';
+                $this->action = 'delete';
+                $this->params = [$parts[2]];
+            }
+            // Route: loans/return
+            elseif (count($parts) == 2 && $parts[0] == 'loans' && $parts[1] == 'return') {
+                $this->controller = 'LoanController';
+                $this->action = 'returnBook';
+            }
             else {
-                // 404
+                // 404 - Page non trouvée
                 $this->show404();
                 return;
             }

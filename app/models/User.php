@@ -19,13 +19,16 @@ class User extends Model {
         return $this->create($data);
     }
     
-    public function authenticate($email, $password) {
-        $user = $this->findByEmail($email);
-        if ($user && password_verify($password, $user['password'])) {
-            return $user;
-        }
-        return false;
+public function authenticate($email, $password) {
+    $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :email AND status = 'actif'");
+    $stmt->execute([':email' => $email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($user && password_verify($password, $user['password'])) {
+        return $user;
     }
+    return false;
+}
 
 public function findAll() {
     $stmt = $this->db->query("SELECT * FROM users");

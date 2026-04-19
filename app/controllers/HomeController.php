@@ -51,7 +51,7 @@ public function dashboard() {
     
     $stats = [
         'total_books' => $totalBooks,
-        'my_loans' => count($userLoans),
+        'my_loans' => $activeLoans,  // ← Changé: utilise $activeLoans au lieu de count($userLoans)
         'active_users' => $activeUsers,
         'reservations' => $totalReservations
     ];

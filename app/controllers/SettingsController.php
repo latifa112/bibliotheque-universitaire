@@ -1,52 +1,63 @@
 <?php
 class SettingsController extends Controller {
     
-public function index() {
-    if (!$this->isLoggedIn()) {
-        $this->redirect('/login');
+    public function index() {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
+        }
+        
+        // Récupérer les données utilisateur
+        $userModel = new User();
+        $userData = $userModel->findById($_SESSION['user_id']);
+        
+        // Préparer l'array $user avec toutes les clés nécessaires
+        $user = [
+            'first_name' => $userData['first_name'] ?? '',
+            'last_name' => $userData['last_name'] ?? '',
+            'email' => $userData['email'] ?? $_SESSION['user_email'] ?? '',
+            'username' => $userData['username'] ?? $_SESSION['username'] ?? '',
+            'created_at' => $userData['created_at'] ?? date('Y-m-d H:i:s')
+        ];
+        
+        // Récupérer les statistiques
+        $book = new Book();
+        $allBooks = $book->findAll();
+        $totalBooks = count($allBooks);
+        
+        $loan = new Loan();
+        $userLoans = $loan->getUserLoans($_SESSION['user_id']);
+        $activeLoans = 0;
+        foreach ($userLoans as $l) {
+            if ($l['status'] == 'en_cours') $activeLoans++;
+        }
+        $total_loans = count($userLoans);
+        $active_loans = $activeLoans;
+        
+        $reservation = new Reservation();
+        $userReservations = $reservation->getUserReservations($_SESSION['user_id']);
+        $totalReservations = 0;
+        foreach ($userReservations as $r) {
+            if ($r['status'] == 'active') $totalReservations++;
+        }
+        
+        $userModelAll = new User();
+        $allUsers = $userModelAll->findAll();
+        $totalUsers = count($allUsers);
+        
+        $preferences = $_SESSION['preferences'] ?? ['notifications' => true, 'language' => 'fr', 'theme' => 'dark'];
+        
+        $this->view('settings/index', [
+            'user' => $user,
+            'totalBooks' => $totalBooks,
+            'activeLoans' => $activeLoans,
+            'totalUsers' => $totalUsers,
+            'totalReservations' => $totalReservations,
+            'total_loans' => $total_loans,
+            'active_loans' => $active_loans,
+            'member_since' => $user['created_at'],
+            'preferences' => $preferences
+        ]);
     }
-    
-    // Récupérer le nombre total de livres
-    $book = new Book();
-    $allBooks = $book->findAll();
-    $totalBooks = count($allBooks);
-    
-    // Récupérer les emprunts de l'utilisateur
-    $loan = new Loan();
-    $userLoans = $loan->getUserLoans($_SESSION['user_id']);
-    $activeLoans = 0;
-    foreach ($userLoans as $l) {
-        if ($l['status'] == 'en_cours') $activeLoans++;
-    }
-    $totalLoans = count($userLoans);
-    
-    // Récupérer le nombre total d'utilisateurs
-    $user = new User();
-    $allUsers = $user->findAll();
-    $totalUsers = count($allUsers);
-    
-    // Récupérer les réservations actives
-    $reservation = new Reservation();
-    $userReservations = $reservation->getUserReservations($_SESSION['user_id']);
-    $totalReservations = 0;
-    foreach ($userReservations as $r) {
-        if ($r['status'] == 'active') $totalReservations++;
-    }
-    
-    // Récupérer les données utilisateur pour la date d'inscription
-    $userData = $user->findById($_SESSION['user_id']);
-    
-    $this->view('settings/index', [
-        'totalBooks' => $totalBooks,
-        'activeLoans' => $activeLoans,
-        'totalUsers' => $totalUsers,
-        'totalReservations' => $totalReservations,
-        'total_loans' => $totalLoans,
-        'active_loans' => $activeLoans,
-        'user' => $userData,
-        'member_since' => $userData['created_at'] ?? date('Y-m-d')
-    ]);
-}
     
     public function updateProfile() {
         if (!$this->isLoggedIn()) {
@@ -60,10 +71,10 @@ public function index() {
         $result = $user->updateProfile($_SESSION['user_id'], $data);
         
         if ($result) {
-            $_SESSION['user_name'] = $data['first_name'] . ' ' . $data['last_name'];
-            $_SESSION['user_email'] = $data['email'];
+            $_SESSION['user_name'] = ($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? '');
+            $_SESSION['user_email'] = $data['email'] ?? '';
             
-            $this->json(['success' => true, 'message' => 'Profil mis à jour']);
+            $this->json(['success' => true, 'message' => 'Profil mis à jour avec succès']);
         } else {
             $this->json(['success' => false, 'message' => 'Erreur lors de la mise à jour']);
         }
@@ -76,8 +87,8 @@ public function index() {
         }
         
         $data = json_decode(file_get_contents('php://input'), true);
-        $currentPassword = $data['current_password'];
-        $newPassword = $data['new_password'];
+        $currentPassword = $data['current_password'] ?? '';
+        $newPassword = $data['new_password'] ?? '';
         
         $user = new User();
         $userData = $user->findById($_SESSION['user_id']);
@@ -106,11 +117,6 @@ public function index() {
         }
         
         $data = json_decode(file_get_contents('php://input'), true);
-        
-        if (isset($data['language']) && $data['language'] != ($_SESSION['preferences']['language'] ?? 'fr')) {
-            $lang = Language::getInstance();
-            $lang->setLanguage($data['language']);
-        }
         
         $_SESSION['preferences'] = [
             'notifications' => $data['notifications'] ?? true,
