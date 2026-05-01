@@ -1,9 +1,75 @@
 <?php
+// Initialisation sécurisée des préférences
 $preferences = $_SESSION['preferences'] ?? ['theme' => 'dark', 'language' => 'fr'];
-$themeClass = $preferences['theme'] === 'light' ? 'light-theme' : 'dark-theme';
+$themeClass = ($preferences['theme'] ?? 'dark') === 'light' ? 'light-theme' : 'dark-theme';
+
+// Calcul direct des compteurs pour la sidebar
+try {
+    $bookModel = new Book();
+    $allBooks = $bookModel->findAll();
+    $totalBooksCount = count($allBooks);
+} catch(Exception $e) {
+    $totalBooksCount = 0;
+}
+
+// Compteurs : admin voit tout, utilisateur voit ses propres données
+$activeLoansCount = 0;
+$totalReservationsCount = 0;
+
+if (isset($_SESSION['user_id'])) {
+    $isAdmin = ($_SESSION['user_role'] ?? '') === 'admin';
+    
+    try {
+        $loanModel = new Loan();
+        if ($isAdmin) {
+            $allLoans = $loanModel->getAllLoans();
+            foreach ($allLoans as $l) {
+                if (($l['status'] ?? '') == 'en_cours') $activeLoansCount++;
+            }
+        } else {
+            $userLoans = $loanModel->getUserLoans($_SESSION['user_id']);
+            foreach ($userLoans as $l) {
+                if (($l['status'] ?? '') == 'en_cours') $activeLoansCount++;
+            }
+        }
+    } catch(Exception $e) {
+        $activeLoansCount = 0;
+    }
+    
+    try {
+        $reservationModel = new Reservation();
+        if ($isAdmin) {
+            $allReservations = $reservationModel->getAllReservations();
+            foreach ($allReservations as $r) {
+                if (($r['status'] ?? '') == 'active') $totalReservationsCount++;
+            }
+        } else {
+            $userReservations = $reservationModel->getUserReservations($_SESSION['user_id']);
+            foreach ($userReservations as $r) {
+                if (($r['status'] ?? '') == 'active') $totalReservationsCount++;
+            }
+        }
+    } catch(Exception $e) {
+        $totalReservationsCount = 0;
+    }
+}
+
+$totalUsersCount = 0;
+if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin') {
+    try {
+        $userModel = new User();
+        $allUsers = $userModel->findAll();
+        $totalUsersCount = count($allUsers);
+    } catch(Exception $e) {
+        $totalUsersCount = 0;
+    }
+}
+
+// Langue pour la balise html
+$currentLang = $_SESSION['preferences']['language'] ?? ($_SESSION['lang'] ?? 'fr');
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $preferences['language']; ?>">
+<html lang="<?php echo $currentLang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1101,51 +1167,53 @@ $themeClass = $preferences['theme'] === 'light' ? 'light-theme' : 'dark-theme';
                 <div class="sidebar-subtitle">Gestion de bibliothèque</div>
             </div>
             <nav class="sidebar-nav">
-    <a href="/dashboard" class="nav-item <?php echo $activePage == 'dashboard' ? 'active' : ''; ?>">
-        <i class="fas fa-chart-pie"></i>
-        <span><?php echo __('dashboard'); ?></span>
-    </a>
-    <a href="/books" class="nav-item <?php echo $activePage == 'books' ? 'active' : ''; ?>">
-        <i class="fas fa-book"></i>
-        <span><?php echo __('catalogue'); ?></span>
-        <span class="nav-badge"><?php echo $totalBooks ?? 0; ?></span>
-    </a>
-    <a href="/loans" class="nav-item <?php echo $activePage == 'loans' ? 'active' : ''; ?>">
-        <i class="fas fa-exchange-alt"></i>
-        <span><?php echo __('loans'); ?></span>
-        <span class="nav-badge"><?php echo $activeLoans ?? 0; ?></span>
-    </a>
-    <a href="/reservations" class="nav-item <?php echo $activePage == 'reservations' ? 'active' : ''; ?>">
-        <i class="fas fa-clock"></i>
-        <span><?php echo __('reservations'); ?></span>
-        <span class="nav-badge"><?php echo $totalReservations ?? 0; ?></span>
-    </a>
-    <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-    <a href="/users" class="nav-item <?php echo $activePage == 'users' ? 'active' : ''; ?>">
-        <i class="fas fa-users"></i>
-        <span><?php echo __('users'); ?></span>
-        <span class="nav-badge"><?php echo $totalUsers ?? 0; ?></span>
-    </a>
-    <?php endif; ?>
-    <a href="/statistics" class="nav-item <?php echo $activePage == 'statistics' ? 'active' : ''; ?>">
-        <i class="fas fa-chart-line"></i>
-        <span><?php echo __('statistics'); ?></span>
-    </a>
-    <a href="/settings" class="nav-item <?php echo $activePage == 'settings' ? 'active' : ''; ?>">
-        <i class="fas fa-cog"></i>
-        <span><?php echo __('settings'); ?></span>
-    </a>
-<?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
-<a href="/admin/backups" class="nav-item <?php echo $activePage == 'backups' ? 'active' : ''; ?>">
-    <i class="fas fa-database"></i>
-    <span><?php echo __('backups'); ?></span>
-</a>
-<?php endif; ?>
-    <a href="/logout" class="nav-item">
-        <i class="fas fa-sign-out-alt"></i>
-        <span><?php echo __('logout'); ?></span>
-    </a>
-</nav>
+                <a href="/dashboard" class="nav-item <?php echo $activePage == 'dashboard' ? 'active' : ''; ?>">
+                    <i class="fas fa-chart-pie"></i>
+                    <span><?php echo __('dashboard'); ?></span>
+                </a>
+                <a href="/books" class="nav-item <?php echo $activePage == 'books' ? 'active' : ''; ?>">
+                    <i class="fas fa-book"></i>
+                    <span><?php echo __('catalogue'); ?></span>
+                    <span class="nav-badge"><?php echo $totalBooksCount; ?></span>
+                </a>
+                <a href="/loans" class="nav-item <?php echo $activePage == 'loans' ? 'active' : ''; ?>">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span><?php echo __('loans'); ?></span>
+                    <span class="nav-badge"><?php echo $activeLoansCount; ?></span>
+                </a>
+                <a href="/reservations" class="nav-item <?php echo $activePage == 'reservations' ? 'active' : ''; ?>">
+                    <i class="fas fa-clock"></i>
+                    <span><?php echo __('reservations'); ?></span>
+                    <span class="nav-badge"><?php echo $totalReservationsCount; ?></span>
+                </a>
+                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                <a href="/users" class="nav-item <?php echo $activePage == 'users' ? 'active' : ''; ?>">
+                    <i class="fas fa-users"></i>
+                    <span><?php echo __('users'); ?></span>
+                    <span class="nav-badge"><?php echo $totalUsersCount; ?></span>
+                </a>
+                <?php endif; ?>
+                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                <a href="/statistics" class="nav-item <?php echo $activePage == 'statistics' ? 'active' : ''; ?>">
+                    <i class="fas fa-chart-line"></i>
+                    <span><?php echo __('statistics'); ?></span>
+                </a>
+                <?php endif; ?>
+                <a href="/settings" class="nav-item <?php echo $activePage == 'settings' ? 'active' : ''; ?>">
+                    <i class="fas fa-cog"></i>
+                    <span><?php echo __('settings'); ?></span>
+                </a>
+                <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                <a href="/admin/backups" class="nav-item <?php echo $activePage == 'backups' ? 'active' : ''; ?>">
+                    <i class="fas fa-database"></i>
+                    <span><?php echo __('backups'); ?></span>
+                </a>
+                <?php endif; ?>
+                <a href="/logout" class="nav-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span><?php echo __('logout'); ?></span>
+                </a>
+            </nav>
         </aside>
 
         <main class="main-content">
@@ -1159,8 +1227,8 @@ $themeClass = $preferences['theme'] === 'light' ? 'light-theme' : 'dark-theme';
                         <i class="fas fa-bell"></i>
                         <span class="notifications-badge" id="notificationsBadge">0</span>
                     </div>
-                    <a href="/profile" class="user-avatar" title="<?php echo $_SESSION['user_name']; ?>">
-                        <?php echo strtoupper(substr($_SESSION['user_name'], 0, 1)); ?>
+                    <a href="/profile" class="user-avatar" title="<?php echo $_SESSION['user_name'] ?? 'Utilisateur'; ?>">
+                        <?php echo strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1)); ?>
                     </a>
                 </div>
             </div>

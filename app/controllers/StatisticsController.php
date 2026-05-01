@@ -2,8 +2,15 @@
 class StatisticsController extends Controller {
     
     public function index() {
+        // Vérifier si l'utilisateur est connecté
         if (!$this->isLoggedIn()) {
             $this->redirect('/login');
+        }
+        
+        // Vérifier si l'utilisateur est admin (sinon rediriger)
+        if (!$this->isAdmin()) {
+            $this->redirect('/dashboard');
+            return;
         }
         
         $book = new Book();
@@ -60,10 +67,11 @@ class StatisticsController extends Controller {
         // ========== TOP 5 LECTEURS ==========
         $topUsers = $user->getTopBorrowers(5);
 
-            error_log("MonthlyStats: " . print_r($monthlyStats, true));
-    error_log("CategoryStats: " . print_r($categoryStats, true));
+        // Logs pour debug (optionnel)
+        // error_log("MonthlyStats: " . print_r($monthlyStats, true));
+        // error_log("CategoryStats: " . print_r($categoryStats, true));
         
-        $this->view('statistics/index', [
+        $this->viewWithSidebar('statistics/index', [
             'totalBooks' => $totalBooks,
             'availableBooks' => $availableBooks,
             'totalUsers' => $totalUsers,
@@ -75,7 +83,8 @@ class StatisticsController extends Controller {
             'topBooks' => $topBooks,
             'monthlyStats' => $monthlyStats,
             'categoryStats' => $categoryStats,
-            'topUsers' => $topUsers
+            'topUsers' => $topUsers,
+            'activePage' => 'statistics'
         ]);
     }
 }

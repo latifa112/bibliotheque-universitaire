@@ -50,11 +50,17 @@ $activePage = 'profile';
                 </div>
                 <div class="avatar-info">
                     <h2><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></h2>
-                    <p class="username">@<?php echo htmlspecialchars($user['username']); ?></p>
-                    <span class="role-badge role-<?php echo $user['role']; ?>">
-                        <i class="fas <?php echo $user['role'] == 'admin' ? 'fa-crown' : ($user['role'] == 'professeur' ? 'fa-chalkboard-user' : 'fa-graduation-cap'); ?>"></i>
-                        <?php echo ucfirst($user['role']); ?>
-                    </span>
+                    <!-- Remplacer username par Rôle -->
+                    <div class="role-container">
+                        <span class="role-label">Rôle :</span>
+                        <span class="role-badge role-<?php echo $user['role']; ?>">
+                            <i class="fas <?php echo $user['role'] == 'admin' ? 'fa-crown' : ($user['role'] == 'professeur' ? 'fa-chalkboard-user' : 'fa-graduation-cap'); ?>"></i>
+                            <?php 
+                            $roles = ['admin' => 'Administrateur', 'etudiant' => 'Étudiant', 'professeur' => 'Professeur'];
+                            echo $roles[$user['role']] ?? ucfirst($user['role']);
+                            ?>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -117,11 +123,6 @@ $activePage = 'profile';
                         </div>
                     </div>
 
-                    <div class="input-group floating-label">
-                        <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($user['username']); ?>" required>
-                        <label for="username"><?php echo __('username'); ?></label>
-                        <i class="fas fa-at input-icon"></i>
-                    </div>
 
                     <div class="input-group floating-label">
                         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
@@ -204,6 +205,50 @@ $activePage = 'profile';
 </div>
 
 <style>
+/* Styles supplémentaires pour le nouveau champ Rôle */
+.role-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.role-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.role-admin {
+    background: rgba(99, 102, 241, 0.2);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.role-etudiant {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.role-professeur {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
 /* Garde tous tes styles CSS inchangés */
 .profile-container {
     max-width: 1200px;
@@ -357,40 +402,7 @@ $activePage = 'profile';
 
 .avatar-info h2 {
     font-size: 1.5rem;
-    margin-bottom: 0.25rem;
-}
-
-.username {
-    color: var(--primary);
-    margin-bottom: 0.75rem;
-}
-
-.role-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 30px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.role-admin {
-    background: rgba(99, 102, 241, 0.2);
-    color: #6366f1;
-    border: 1px solid rgba(99, 102, 241, 0.3);
-}
-
-.role-etudiant {
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.role-professeur {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    margin-bottom: 0.5rem;
 }
 
 .info-section, .edit-section, .rgpd-section {
@@ -455,6 +467,11 @@ $activePage = 'profile';
     outline: none;
     border-color: var(--primary);
     background: rgba(255, 255, 255, 0.1);
+}
+
+.input-group.floating-label input:read-only {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .input-group.floating-label label {
@@ -839,12 +856,12 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
     const confirmPassword = document.getElementById('confirm_password').value;
     
     if (newPassword !== confirmPassword) {
-        alert('❌ <?php echo __('password_mismatch'); ?>');
+        alert('❌ Les mots de passe ne correspondent pas');
         return;
     }
     
     if (newPassword.length < 6) {
-        alert('❌ <?php echo __('password_length'); ?>');
+        alert('❌ Le mot de passe doit contenir au moins 6 caractères');
         return;
     }
     
@@ -860,14 +877,14 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ <?php echo __('password_changed'); ?>');
+            alert('✅ ' + result.message);
             closePasswordModal();
             document.getElementById('changePasswordForm').reset();
         } else {
             alert('❌ ' + result.message);
         }
     } catch (error) {
-        alert('<?php echo __('connection_error'); ?>');
+        alert('Erreur de connexion');
     }
 });
 

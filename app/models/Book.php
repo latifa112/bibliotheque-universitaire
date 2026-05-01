@@ -60,95 +60,195 @@ public function getCategoryStats() {
  * Obtenir des recommandations personnalisées pour un utilisateur
  */
 public function getPersonalizedRecommendations($userId, $limit = 6) {
-    $recommendations = [];
-    
-    // 1. Recommandations basées sur la filière d'étude
-    $user = new User();
-    $userData = $user->findById($userId);
-    $fieldOfStudy = $userData['field_of_study'] ?? null;
-    
-    if ($fieldOfStudy) {
-        $category = $this->getCategoryFromField($fieldOfStudy);
+    try {
+        // 1. Récupérer l'historique des emprunts de l'utilisateur avec catégories
         $stmt = $this->db->prepare("
-            SELECT *, 'basé sur votre filière' as reason
-            FROM books 
-            WHERE category = :category 
-            AND available_quantity > 0
-            ORDER BY RAND()
+            SELECT DISTINCT b.category, COUNT(*) as count, GROUP_CONCAT(DISTINCT b.author) as authors
+            FROM loans l
+            JOIN books b ON l.book_id = b.id
+            WHERE l.user_id = :user_id AND b.category IS NOT NULL AND b.category != ''
+            GROUP BY b.category
+            ORDER BY count DESC
+            LIMIT 3
+        ");
+        $stmt->execute([':user_id' => $userId]);
+        $userCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $recommendations = [];
+        
+        // 2. Recommandations basées sur les catégories préférées
+        if (!empty($userCategories)) {
+            foreach ($userCategories as $cat) {
+                $category = $cat['category'];
+                $stmt = $this->db->prepare("
+                    SELECT b.*, 
+                           'similar_category' as type,
+                           :category as matched_category,
+                           '📚 Parce que vous aimez la catégorie ' || :category || '' as reason
+                    FROM books b
+                    WHERE b.category = :category 
+                    AND b.available_quantity > 0
+                    AND b.id NOT IN (
+                        SELECT book_id FROM loans WHERE user_id = :user_id
+                    )
+                    ORDER BY RANDOM()
+                    LIMIT 2
+                ");
+                $stmt->execute([
+                    ':category' => $category,
+                    ':user_id' => $userId
+                ]);
+                $catBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($catBooks as $book) {
+                    $book['reason'] = "📚 Parce que vous aimez la catégorie « " . $this->getCategoryName($category) . " »";
+                    $book['type'] = 'category';
+                    $recommendations[] = $book;
+                }
+            }
+        }
+        
+        // 3. Recommandations basées sur les auteurs préférés
+        $stmt = $this->db->prepare("
+            SELECT b.author, COUNT(*) as count
+            FROM loans l
+            JOIN books b ON l.book_id = b.id
+            WHERE l.user_id = :user_id AND b.author IS NOT NULL
+            GROUP BY b.author
+            ORDER BY count DESC
             LIMIT 2
         ");
-        $stmt->execute([':category' => $category]);
-        $fieldRecommendations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $recommendations = array_merge($recommendations, $fieldRecommendations);
-    }
-    
-    // 2. Recommandations basées sur l'historique d'emprunts
-    $stmt = $this->db->prepare("
-        SELECT b.category, COUNT(*) as count
-        FROM loans l
-        JOIN books b ON l.book_id = b.id
-        WHERE l.user_id = :user_id AND b.category IS NOT NULL
-        GROUP BY b.category
-        ORDER BY count DESC
-        LIMIT 2
-    ");
-    $stmt->execute([':user_id' => $userId]);
-    $favoriteCategories = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    if (!empty($favoriteCategories)) {
-        $category = $favoriteCategories[0]['category'];
+        $stmt->execute([':user_id' => $userId]);
+        $favoriteAuthors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (!empty($favoriteAuthors)) {
+            foreach ($favoriteAuthors as $authorData) {
+                $author = $authorData['author'];
+                $stmt = $this->db->prepare("
+                    SELECT b.*, 
+                           'same_author' as type,
+                           :author as matched_author,
+                           '✍️ Vous avez aimé les livres de ' || :author || ' - Découvrez ses autres œuvres' as reason
+                    FROM books b
+                    WHERE b.author = :author 
+                    AND b.available_quantity > 0
+                    AND b.id NOT IN (
+                        SELECT book_id FROM loans WHERE user_id = :user_id
+                    )
+                    ORDER BY RANDOM()
+                    LIMIT 2
+                ");
+                $stmt->execute([
+                    ':author' => $author,
+                    ':user_id' => $userId
+                ]);
+                $authorBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($authorBooks as $book) {
+                    $book['reason'] = "✍️ Vous avez aimé « " . $author . " » - Découvrez ses autres œuvres";
+                    $book['type'] = 'author';
+                    $recommendations[] = $book;
+                }
+            }
+        }
+        
+        // 4. Livres populaires (les plus empruntés)
+        if (count($recommendations) < $limit) {
+            $stmt = $this->db->prepare("
+                SELECT b.*, 
+                       COUNT(l.id) as loan_count,
+                       'popular' as type,
+                       '🔥 Très populaire - ' || COUNT(l.id) || ' emprunts ce mois-ci' as reason
+                FROM books b
+                LEFT JOIN loans l ON b.id = l.book_id AND l.loan_date >= date('now', '-30 days')
+                WHERE b.available_quantity > 0
+                AND b.id NOT IN (
+                    SELECT book_id FROM loans WHERE user_id = :user_id
+                )
+                GROUP BY b.id
+                ORDER BY loan_count DESC
+                LIMIT :limit
+            ");
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit - count($recommendations), PDO::PARAM_INT);
+            $stmt->execute();
+            $popularBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($popularBooks as $book) {
+                $book['reason'] = "🔥 Très populaire - " . ($book['loan_count'] ?? 0) . " emprunts ce mois-ci";
+                $recommendations[] = $book;
+            }
+        }
+        
+        // 5. Nouveautés
+        if (count($recommendations) < $limit) {
+            $stmt = $this->db->prepare("
+                SELECT b.*, 
+                       'new' as type,
+                       '✨ Nouvelle arrivée - Ajouté récemment à notre bibliothèque' as reason
+                FROM books b
+                WHERE b.available_quantity > 0
+                AND b.id NOT IN (
+                    SELECT book_id FROM loans WHERE user_id = :user_id
+                )
+                ORDER BY b.created_at DESC
+                LIMIT :limit
+            ");
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit - count($recommendations), PDO::PARAM_INT);
+            $stmt->execute();
+            $newBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($newBooks as $book) {
+                $book['reason'] = "✨ Nouvelle arrivée - Ajouté récemment à notre bibliothèque";
+                $recommendations[] = $book;
+            }
+        }
+        
+        // Supprimer les doublons
+        $uniqueRecommendations = [];
+        $seenIds = [];
+        foreach ($recommendations as $rec) {
+            if (!in_array($rec['id'], $seenIds)) {
+                $seenIds[] = $rec['id'];
+                $uniqueRecommendations[] = $rec;
+            }
+        }
+        
+        // Limiter et retourner
+        return array_slice($uniqueRecommendations, 0, $limit);
+        
+    } catch (Exception $e) {
+        error_log("Erreur recommendations: " . $e->getMessage());
+        // Fallback : livres récents
         $stmt = $this->db->prepare("
-            SELECT *, 'parce que vous aimez les livres de " . $category . "' as reason
-            FROM books 
-            WHERE category = :category 
-            AND available_quantity > 0
-            AND id NOT IN (SELECT book_id FROM loans WHERE user_id = :user_id)
-            ORDER BY RAND()
-            LIMIT 2
+            SELECT b.*, 
+                   'default' as type,
+                   '📖 Découvrez notre sélection de livres récents' as reason
+            FROM books b
+            WHERE b.available_quantity > 0
+            ORDER BY b.created_at DESC
+            LIMIT :limit
         ");
-        $stmt->execute([':category' => $category, ':user_id' => $userId]);
-        $historyRecommendations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $recommendations = array_merge($recommendations, $historyRecommendations);
-    }
-    
-    // 3. Recommandations basées sur les livres populaires
-    $stmt = $this->db->prepare("
-        SELECT b.*, COUNT(l.id) as loan_count, 
-               'livre populaire parmi nos lecteurs' as reason
-        FROM books b
-        LEFT JOIN loans l ON b.id = l.book_id
-        WHERE b.available_quantity > 0
-        GROUP BY b.id
-        ORDER BY loan_count DESC
-        LIMIT ?
-    ");
-    $limitNeeded = $limit - count($recommendations);
-    if ($limitNeeded > 0) {
-        $stmt->bindParam(1, $limitNeeded, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
-        $popularRecommendations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $recommendations = array_merge($recommendations, $popularRecommendations);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-    // 4. Si encore trop peu, ajouter des nouveautés
-    if (count($recommendations) < $limit) {
-        $stmt = $this->db->prepare("
-            SELECT *, 'nouvelle arrivée' as reason
-            FROM books 
-            WHERE available_quantity > 0
-            ORDER BY created_at DESC
-            LIMIT ?
-        ");
-        $remaining = $limit - count($recommendations);
-        $stmt->bindParam(1, $remaining, PDO::PARAM_INT);
-        $stmt->execute();
-        $newRecommendations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $recommendations = array_merge($recommendations, $newRecommendations);
-    }
-    
-    return array_slice($recommendations, 0, $limit);
 }
 
+private function getCategoryName($category) {
+    $categories = [
+        'computer_science' => 'Informatique',
+        'sciences' => 'Sciences',
+        'history' => 'Histoire',
+        'literature' => 'Littérature',
+        'art' => 'Art',
+        'philosophy' => 'Philosophie',
+        'psychology' => 'Psychologie',
+        'economy' => 'Économie',
+        'fiction' => 'Fiction',
+        'science_fiction' => 'Science-Fiction',
+        'biography' => 'Biographie',
+        'self_help' => 'Développement personnel'
+    ];
+    return $categories[$category] ?? $category;
+}
 /**
  * Convertir une filière en catégorie de livre
  */

@@ -7,7 +7,11 @@ class Language {
     private $cookieName = 'bibliogest_lang';
     
     private function __construct() {
-        // Priorité : Session > Cookie > Fr
+        if (session_status() === PHP_SESSION_NONE) {
+            session_name('BIBLIOGEST_SESSION');
+            session_start();
+        }
+        
         if (isset($_SESSION['lang'])) {
             $this->currentLang = $_SESSION['lang'];
         } elseif (isset($_COOKIE[$this->cookieName])) {
@@ -15,7 +19,13 @@ class Language {
             $_SESSION['lang'] = $this->currentLang;
         } else {
             $this->currentLang = 'fr';
+            $_SESSION['lang'] = 'fr';
         }
+        
+        if (!isset($_SESSION['preferences']['language'])) {
+            $_SESSION['preferences']['language'] = $this->currentLang;
+        }
+        
         $this->loadLanguage();
     }
     
@@ -41,7 +51,10 @@ class Language {
     }
     
     public function get($key, $default = null) {
-        return $this->translations[$key] ?? $default ?? $key;
+        if (isset($this->translations[$key])) {
+            return $this->translations[$key];
+        }
+        return $default ?? $key;
     }
     
     public function setLanguage($lang) {
@@ -66,7 +79,9 @@ class Language {
 }
 
 // Fonction helper pour utiliser dans les vues
-function __($key, $default = null) {
-    return Language::getInstance()->get($key, $default);
+if (!function_exists('__')) {
+    function __($key, $default = null) {
+        return Language::getInstance()->get($key, $default);
+    }
 }
 ?>

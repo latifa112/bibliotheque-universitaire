@@ -49,6 +49,8 @@ class Router {
             'admin/backups/delete' => ['BackupController', 'delete'],
             'profile/export' => ['UserController', 'exportData'],
             'api/recommendations' => ['ApiController', 'getRecommendations'],
+            'profile/delete' => ['UserController', 'deleteAccount'],
+            'profile/check-before-delete' => ['UserController', 'checkBeforeDelete'],
         ];
         
         // Vérifier si l'URL existe dans les routes

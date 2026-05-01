@@ -41,8 +41,14 @@ class Controller {
  * Afficher une vue avec les données de la sidebar
  */
 protected function viewWithSidebar($view, $data = []) {
+    // Récupérer les données de la sidebar (statistiques globales)
     $sidebarData = $this->getSidebarData();
+    // Fusionner avec les données passées
     $allData = array_merge($sidebarData, $data);
+    // S'assurer que activePage est défini
+    if (!isset($allData['activePage'])) {
+        $allData['activePage'] = $view;
+    }
     $this->view($view, $allData);
 }
 
@@ -81,6 +87,8 @@ protected function getSidebarData() {
             $user = new User();
             $allUsers = $user->findAll();
             $data['totalUsers'] = count($allUsers);
+        } else {
+            $data['totalUsers'] = 0;
         }
         
         // Réservations actives de l'utilisateur

@@ -168,18 +168,18 @@ $preferences = $preferences ?? ['notifications' => true, 'language' => 'fr', 'th
                                 <span class="select-desc">Choisissez votre langue</span>
                             </div>
                             <select id="language" name="language">
-                                <option value="fr" <?php echo $preferences['language'] == 'fr' ? 'selected' : ''; ?>>🇫🇷 Français</option>
-                                <option value="en" <?php echo $preferences['language'] == 'en' ? 'selected' : ''; ?>>🇬🇧 English</option>
-                                <option value="ar" <?php echo $preferences['language'] == 'ar' ? 'selected' : ''; ?>>🇸🇦 العربية</option>
+                                <option value="fr" <?php echo ($preferences['language'] ?? 'fr') == 'fr' ? 'selected' : ''; ?>>🇫🇷 Français</option>
+                                <option value="en" <?php echo ($preferences['language'] ?? 'fr') == 'en' ? 'selected' : ''; ?>>🇬🇧 English</option>
+                                <option value="ar" <?php echo ($preferences['language'] ?? 'fr') == 'ar' ? 'selected' : ''; ?>>🇸🇦 العربية</option>
                             </select>
                         </div>
                     </div>
                     <div class="theme-options">
-                        <div class="theme-option dark <?php echo $preferences['theme'] == 'dark' ? 'active' : ''; ?>" data-theme="dark">
+                        <div class="theme-option dark <?php echo ($preferences['theme'] ?? 'dark') == 'dark' ? 'active' : ''; ?>" data-theme="dark">
                             <i class="fas fa-moon"></i>
                             <span>Sombre</span>
                         </div>
-                        <div class="theme-option light <?php echo $preferences['theme'] == 'light' ? 'active' : ''; ?>" data-theme="light">
+                        <div class="theme-option light <?php echo ($preferences['theme'] ?? 'dark') == 'light' ? 'active' : ''; ?>" data-theme="light">
                             <i class="fas fa-sun"></i>
                             <span>Clair</span>
                         </div>
@@ -832,7 +832,6 @@ input:checked + .slider:before {
 </style>
 
 <script>
-// Force du mot de passe
 const passwordInput = document.getElementById('new_password');
 const strengthBar = document.getElementById('strengthBar');
 const strengthText = document.getElementById('strengthText');
@@ -870,7 +869,6 @@ if (passwordInput) {
     });
 }
 
-// Thème options
 document.querySelectorAll('.theme-option').forEach(option => {
     option.addEventListener('click', function() {
         document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
@@ -888,7 +886,6 @@ document.querySelectorAll('.theme-option').forEach(option => {
     });
 });
 
-// Charger le thème
 const savedTheme = localStorage.getItem('theme');
 if (savedTheme) {
     if (savedTheme === 'light') {
@@ -904,7 +901,6 @@ if (savedTheme) {
     });
 }
 
-// Formulaire profil
 document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
@@ -923,7 +919,6 @@ document.getElementById('profileForm')?.addEventListener('submit', async (e) => 
     if (result.success) location.reload();
 });
 
-// Formulaire mot de passe
 document.getElementById('passwordForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newPass = document.getElementById('new_password').value;
@@ -949,29 +944,46 @@ document.getElementById('passwordForm')?.addEventListener('submit', async (e) =>
     if (result.success) document.getElementById('passwordForm').reset();
 });
 
-// Formulaire préférences
 document.getElementById('preferencesForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const selectedTheme = document.querySelector('.theme-option.active')?.dataset.theme || 'dark';
+    const selectedLanguage = document.getElementById('language')?.value || 'fr';
+    
     const data = {
         notifications: document.querySelector('input[name="notifications"]')?.checked || false,
-        language: document.getElementById('language')?.value || 'fr',
+        language: selectedLanguage,
         theme: selectedTheme
     };
     
-    const response = await fetch('/settings/update-preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    const result = await response.json();
-    alert(result.message);
-    if (result.success && result.language !== '<?php echo $preferences['language']; ?>') {
-        location.reload();
+    try {
+        const response = await fetch('/settings/update-preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            if (result.language !== '<?php echo $preferences['language'] ?? 'fr'; ?>') {
+                location.reload();
+            } else {
+                if (selectedTheme === 'light') {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                } else {
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                }
+            }
+        } else {
+            alert('❌ ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur de connexion');
     }
 });
 
-// Cercle de progression
 document.addEventListener('DOMContentLoaded', function() {
     const totalLoans = <?php echo $total_loans; ?>;
     const activeLoans = <?php echo $active_loans; ?>;
@@ -990,7 +1002,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Jours d'activité
 const createdDate = '<?php echo $user['created_at']; ?>';
 if (createdDate) {
     const days = Math.floor((new Date() - new Date(createdDate)) / (1000 * 60 * 60 * 24));
@@ -1000,6 +1011,36 @@ if (createdDate) {
 function deleteAccount() {
     if (!confirm('⚠️ Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible !')) return;
     if (!confirm('⚠️ DERNIÈRE CHANCE : Voulez-vous vraiment supprimer votre compte définitivement ?')) return;
-    alert('Cette fonctionnalité sera bientôt disponible');
+    
+    // Vérifier d'abord les emprunts actifs via une requête
+    fetch('/profile/check-before-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(check => {
+        if (!check.can_delete) {
+            alert('❌ ' + check.message);
+            return;
+        }
+        
+        // Procéder à la suppression
+        fetch('/profile/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('✅ ' + result.message);
+                window.location.href = '/register';
+            } else {
+                alert('❌ ' + result.message);
+            }
+        });
+    })
+    .catch(error => {
+        alert('Erreur de connexion');
+    });
 }
 </script>

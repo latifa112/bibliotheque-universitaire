@@ -14,50 +14,50 @@ $totalReservations = $totalReservations ?? 0;
                 <i class="fas fa-users"></i>
             </div>
             <div class="hero-text">
-                <h1><?php echo __('user_management'); ?></h1>
-                <p><?php echo __('manage_users'); ?></p>
+                <h1>Gestion des utilisateurs</h1>
+                <p>Gérez les comptes et les permissions des utilisateurs</p>
             </div>
         </div>
         <div class="hero-stats">
             <div class="stat-card-mini">
                 <i class="fas fa-users"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('total_users'); ?></span>
+                    <span class="stat-label">Total utilisateurs</span>
                     <strong><?php echo $stats['total']; ?></strong>
                 </div>
             </div>
             <div class="stat-card-mini">
                 <i class="fas fa-check-circle"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('active_users_count'); ?></span>
+                    <span class="stat-label">Utilisateurs actifs</span>
                     <strong><?php echo $stats['active']; ?></strong>
                 </div>
             </div>
             <div class="stat-card-mini">
                 <i class="fas fa-ban"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('inactive_users'); ?></span>
+                    <span class="stat-label">Utilisateurs inactifs</span>
                     <strong><?php echo $stats['inactive']; ?></strong>
                 </div>
             </div>
             <div class="stat-card-mini">
                 <i class="fas fa-crown"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('admins'); ?></span>
+                    <span class="stat-label">Administrateurs</span>
                     <strong><?php echo $stats['admins']; ?></strong>
                 </div>
             </div>
             <div class="stat-card-mini">
                 <i class="fas fa-graduation-cap"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('students'); ?></span>
+                    <span class="stat-label">Étudiants</span>
                     <strong><?php echo $stats['students']; ?></strong>
                 </div>
             </div>
             <div class="stat-card-mini">
                 <i class="fas fa-chalkboard-user"></i>
                 <div class="stat-info">
-                    <span class="stat-label"><?php echo __('teachers'); ?></span>
+                    <span class="stat-label">Enseignants</span>
                     <strong><?php echo $stats['teachers']; ?></strong>
                 </div>
             </div>
@@ -69,13 +69,13 @@ $totalReservations = $totalReservations ?? 0;
             <table class="users-table">
                 <thead>
                     <tr>
-                        <th><i class="fas fa-user"></i> <?php echo __('user'); ?></th>
-                        <th><i class="fas fa-envelope"></i> <?php echo __('email'); ?></th>
-                        <th><i class="fas fa-user-tag"></i> <?php echo __('role'); ?></th>
-                        <th><i class="fas fa-chart-line"></i> <?php echo __('statistics'); ?></th>
-                        <th><i class="fas fa-calendar"></i> <?php echo __('member_since'); ?></th>
-                        <th><i class="fas fa-circle"></i> <?php echo __('status'); ?></th>
-                        <th><i class="fas fa-cog"></i> <?php echo __('action'); ?></th>
+                        <th><i class="fas fa-user"></i> Utilisateur</th>
+                        <th><i class="fas fa-envelope"></i> Email</th>
+                        <th><i class="fas fa-user-tag"></i> Rôle</th>
+                        <th><i class="fas fa-chart-line"></i> Statistiques</th>
+                        <th><i class="fas fa-calendar"></i> Membre depuis</th>
+                        <th><i class="fas fa-circle"></i> Statut</th>
+                        <th><i class="fas fa-cog"></i> Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -89,37 +89,37 @@ $totalReservations = $totalReservations ?? 0;
                                 <strong><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></strong>
                                 <span>@<?php echo htmlspecialchars($user['username']); ?></span>
                             </div>
-                        </td>
+                        </div>
                         <td><?php echo htmlspecialchars($user['email']); ?></td>
                         <td>
                             <span class="role-badge role-<?php echo $user['role']; ?>">
                                 <i class="fas <?php echo $user['role'] == 'admin' ? 'fa-crown' : ($user['role'] == 'professeur' ? 'fa-chalkboard-user' : 'fa-graduation-cap'); ?>"></i>
                                 <?php echo ucfirst($user['role']); ?>
                             </span>
-                        </td>
+                        </div>
                         <td>
                             <div class="user-stats">
-                                <span title="<?php echo __('total_loans_user'); ?>"><i class="fas fa-book"></i> <?php echo $user['total_loans'] ?? 0; ?></span>
-                                <span title="<?php echo __('active_loans_user'); ?>"><i class="fas fa-hourglass-half"></i> <?php echo $user['active_loans'] ?? 0; ?></span>
+                                <span title="Total emprunts"><i class="fas fa-book"></i> <?php echo $user['total_loans'] ?? 0; ?></span>
+                                <span title="Emprunts actifs"><i class="fas fa-hourglass-half"></i> <?php echo $user['active_loans'] ?? 0; ?></span>
                             </div>
-                        </td>
-                        <td><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></td>
+                        </div>
+                        <td><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></div>
                         <td>
                             <span class="status-badge status-<?php echo $user['status']; ?>">
                                 <i class="fas <?php echo $user['status'] == 'actif' ? 'fa-check-circle' : 'fa-ban'; ?>"></i>
-                                <?php echo $user['status'] == 'actif' ? __('status_active') : __('status_inactive'); ?>
+                                <?php echo $user['status'] == 'actif' ? 'Actif' : 'Inactif'; ?>
                             </span>
-                        </td>
+                        </div>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn-toggle-status" onclick="toggleUserStatus(<?php echo $user['id']; ?>, '<?php echo $user['status']; ?>')" title="<?php echo $user['status'] == 'actif' ? __('deactivate') : __('activate'); ?>">
+                                <button class="btn-toggle-status" onclick="toggleUserStatus(<?php echo $user['id']; ?>, '<?php echo $user['status']; ?>')" title="<?php echo $user['status'] == 'actif' ? 'Désactiver' : 'Activer'; ?>">
                                     <i class="fas <?php echo $user['status'] == 'actif' ? 'fa-ban' : 'fa-check-circle'; ?>"></i>
                                 </button>
-                                <button class="btn-delete-user" onclick="deleteUser(<?php echo $user['id']; ?>)" title="<?php echo __('delete_user'); ?>">
+                                <button class="btn-delete-user" onclick="deleteUser(<?php echo $user['id']; ?>)" title="Supprimer">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
-                        </td>
+                        </div>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -129,7 +129,6 @@ $totalReservations = $totalReservations ?? 0;
 </div>
 
 <style>
-/* Garde tous tes styles CSS inchangés */
 .users-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -421,7 +420,7 @@ $totalReservations = $totalReservations ?? 0;
 <script>
 async function toggleUserStatus(userId, currentStatus) {
     const newStatus = currentStatus === 'actif' ? 'inactif' : 'actif';
-    const action = newStatus === 'actif' ? '<?php echo __('activate'); ?>' : '<?php echo __('deactivate'); ?>';
+    const action = newStatus === 'actif' ? 'activer' : 'désactiver';
     
     if (!confirm(`Voulez-vous ${action} cet utilisateur ?`)) return;
     
@@ -440,12 +439,12 @@ async function toggleUserStatus(userId, currentStatus) {
             alert('❌ ' + result.message);
         }
     } catch (error) {
-        alert('<?php echo __('connection_error'); ?>');
+        alert('Erreur de connexion');
     }
 }
 
 async function deleteUser(userId) {
-    if (!confirm('<?php echo __('confirm_delete_user'); ?>')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur définitivement ?')) return;
     
     try {
         const response = await fetch('/users/delete', {
@@ -462,7 +461,7 @@ async function deleteUser(userId) {
             alert('❌ ' + result.message);
         }
     } catch (error) {
-        alert('<?php echo __('connection_error'); ?>');
+        alert('Erreur de connexion');
     }
 }
 </script>

@@ -293,52 +293,86 @@ public function profile() {
         include ROOT . '/app/views/auth/reset-password.php';
         exit;
     }
+    //supprimer le compte 
+public function deleteAccount() {
+    header('Content-Type: application/json');
     
-    // ========== NOUVELLE MÉTHODE : SUPPRESSION DE COMPTE ==========
-    public function deleteAccount() {
-        if (!$this->isLoggedIn()) {
-            $this->json(['success' => false, 'message' => 'Non connecté']);
-            return;
-        }
-        
-        $loan = new Loan();
-        $userLoans = $loan->getUserLoans($_SESSION['user_id']);
-        
-        // Vérifier s'il n'a pas d'emprunts actifs
-        $hasActiveLoans = false;
-        foreach ($userLoans as $l) {
-            if ($l['status'] == 'en_cours') {
-                $hasActiveLoans = true;
-                break;
-            }
-        }
-        
-        if ($hasActiveLoans) {
-            $this->json(['success' => false, 'message' => '❌ Vous avez des emprunts en cours. Retournez tous vos livres avant de supprimer votre compte.']);
-            return;
-        }
-        
-        $user = new User();
-        if ($user->delete($_SESSION['user_id'])) {
-            // Supprimer les notifications de l'utilisateur
-            $db = Database::getInstance()->getConnection();
-            $stmt = $db->prepare("DELETE FROM notifications WHERE user_id = :user_id");
-            $stmt->execute([':user_id' => $_SESSION['user_id']]);
-            
-            // Supprimer les réservations
-            $stmt = $db->prepare("DELETE FROM reservations WHERE user_id = :user_id");
-            $stmt->execute([':user_id' => $_SESSION['user_id']]);
-            
-            // Supprimer les emprunts (déjà retournés)
-            $stmt = $db->prepare("DELETE FROM loans WHERE user_id = :user_id");
-            $stmt->execute([':user_id' => $_SESSION['user_id']]);
-            
-            session_destroy();
-            $this->json(['success' => true, 'message' => '✅ Votre compte a été supprimé avec succès', 'redirect' => '/register']);
-        } else {
-            $this->json(['success' => false, 'message' => '❌ Erreur lors de la suppression du compte']);
+    if (!$this->isLoggedIn()) {
+        echo json_encode(['success' => false, 'message' => 'Non connecté']);
+        return;
+    }
+    
+    $userId = $_SESSION['user_id'];
+    $loan = new Loan();
+    $userLoans = $loan->getUserLoans($userId);
+    
+    // Vérifier s'il y a des emprunts en cours
+    $hasActiveLoans = false;
+    $activeLoansList = [];
+    foreach ($userLoans as $loanItem) {
+        if ($loanItem['status'] == 'en_cours') {
+            $hasActiveLoans = true;
+            $activeLoansList[] = $loanItem['title'];
         }
     }
+    
+    if ($hasActiveLoans) {
+        $booksList = implode(', ', $activeLoansList);
+        echo json_encode(['success' => false, 'message' => '❌ Vous devez retourner les livres suivants avant de supprimer votre compte : ' . $booksList]);
+        return;
+    }
+    
+    // Vérifier s'il y a des réservations actives
+    $reservationModel = new Reservation();
+    $userReservations = $reservationModel->getUserReservations($userId);
+    $hasActiveReservations = false;
+    foreach ($userReservations as $res) {
+        if ($res['status'] == 'active') {
+            $hasActiveReservations = true;
+            break;
+        }
+    }
+    
+    if ($hasActiveReservations) {
+        echo json_encode(['success' => false, 'message' => '❌ Vous devez annuler toutes vos réservations avant de supprimer votre compte']);
+        return;
+    }
+    
+    $db = Database::getInstance()->getConnection();
+    
+    try {
+        $db->beginTransaction();
+        
+        // Supprimer les notifications
+        $stmt = $db->prepare("DELETE FROM notifications WHERE user_id = :user_id");
+        $stmt->execute([':user_id' => $userId]);
+        
+        // Supprimer les réservations
+        $stmt = $db->prepare("DELETE FROM reservations WHERE user_id = :user_id");
+        $stmt->execute([':user_id' => $userId]);
+        
+        // Supprimer les emprunts (déjà retournés)
+        $stmt = $db->prepare("DELETE FROM loans WHERE user_id = :user_id");
+        $stmt->execute([':user_id' => $userId]);
+        
+        // Supprimer l'utilisateur
+        $user = new User();
+        $result = $user->delete($userId);
+        
+        if ($result) {
+            $db->commit();
+            session_destroy();
+            echo json_encode(['success' => true, 'message' => '✅ Votre compte a été supprimé avec succès']);
+        } else {
+            $db->rollBack();
+            echo json_encode(['success' => false, 'message' => '❌ Erreur lors de la suppression du compte']);
+        }
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        echo json_encode(['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()]);
+    }
+}
     // ========== FIN DE LA NOUVELLE MÉTHODE ==========
     
     private function countActiveLoans($loans) {
@@ -350,5 +384,49 @@ public function profile() {
         }
         return $count;
     }
+
+    // méthode de vérification 
+    public function checkBeforeDelete() {
+    header('Content-Type: application/json');
+    
+    if (!$this->isLoggedIn()) {
+        echo json_encode(['can_delete' => false, 'message' => 'Non connecté']);
+        return;
+    }
+    
+    $userId = $_SESSION['user_id'];
+    $loan = new Loan();
+    $userLoans = $loan->getUserLoans($userId);
+    
+    $hasActiveLoans = false;
+    foreach ($userLoans as $loanItem) {
+        if ($loanItem['status'] == 'en_cours') {
+            $hasActiveLoans = true;
+            break;
+        }
+    }
+    
+    if ($hasActiveLoans) {
+        echo json_encode(['can_delete' => false, 'message' => '❌ Vous devez retourner tous vos livres avant de supprimer votre compte']);
+        return;
+    }
+    
+    $reservationModel = new Reservation();
+    $userReservations = $reservationModel->getUserReservations($userId);
+    $hasActiveReservations = false;
+    foreach ($userReservations as $res) {
+        if ($res['status'] == 'active') {
+            $hasActiveReservations = true;
+            break;
+        }
+    }
+    
+    if ($hasActiveReservations) {
+        echo json_encode(['can_delete' => false, 'message' => '❌ Vous devez annuler toutes vos réservations avant de supprimer votre compte']);
+        return;
+    }
+    
+    echo json_encode(['can_delete' => true, 'message' => 'ok']);
+}
 }
 ?>

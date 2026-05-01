@@ -1,36 +1,11 @@
 <?php
-// Définir les variables pour la sidebar
 $activePage = 'dashboard';
 $totalBooks = $totalBooks ?? 0;
 $activeLoans = $activeLoans ?? 0;
 $totalUsers = $totalUsers ?? 0;
 $totalReservations = $totalReservations ?? 0;
-
-// Fonction de traduction simple si __() n'existe pas
-if (!function_exists('__')) {
-    function __($key) {
-        $translations = [
-            'total_books' => 'Livres au catalogue',
-            'active_users' => 'Utilisateurs actifs',
-            'my_loans' => 'Mes emprunts',
-            'reservations' => 'Mes réservations',
-            'welcome' => 'Bienvenue',
-            'email' => 'Email',
-            'role' => 'Rôle',
-            'member_since' => 'Membre depuis',
-            'explore_catalogue' => 'Explorer le catalogue',
-            'view_my_loans' => 'Voir mes emprunts',
-            'new_arrivals' => 'Nouveautés',
-            'available' => 'Disponible',
-            'unavailable' => 'Indisponible',
-            'borrow' => 'Emprunter',
-            'reserve' => 'Réserver',
-            'confirm' => 'Confirmez-vous cette action ?',
-            'error' => 'Une erreur est survenue'
-        ];
-        return $translations[$key] ?? $key;
-    }
-}
+$themeClass = $_SESSION['preferences']['theme'] ?? 'dark';
+$themeClass = $themeClass === 'light' ? 'light-theme' : 'dark-theme';
 ?>
 
 <!-- Stats Cards -->
@@ -41,7 +16,7 @@ if (!function_exists('__')) {
         </div>
         <div class="stat-info">
             <h3><?php echo number_format($stats['total_books'] ?? $totalBooks); ?></h3>
-            <p><?php echo __('total_books'); ?></p>
+            <p>Livres au catalogue</p>
         </div>
     </div>
     
@@ -52,7 +27,7 @@ if (!function_exists('__')) {
         </div>
         <div class="stat-info">
             <h3><?php echo number_format($stats['active_users'] ?? 0); ?></h3>
-            <p><?php echo __('active_users'); ?></p>
+            <p>Utilisateurs actifs</p>
         </div>
     </div>
     <?php endif; ?>
@@ -63,7 +38,7 @@ if (!function_exists('__')) {
         </div>
         <div class="stat-info">
             <h3><?php echo $stats['my_loans'] ?? $activeLoans; ?></h3>
-            <p><?php echo __('my_loans'); ?></p>
+            <p>Mes emprunts</p>
         </div>
     </div>
     
@@ -73,7 +48,7 @@ if (!function_exists('__')) {
         </div>
         <div class="stat-info">
             <h3><?php echo $stats['reservations'] ?? $totalReservations; ?></h3>
-            <p><?php echo __('reservations'); ?></p>
+            <p>Mes réservations</p>
         </div>
     </div>
 </div>
@@ -85,7 +60,7 @@ if (!function_exists('__')) {
             <div class="welcome-text">
                 <h2>
                     <i class="fas fa-hand-wave" style="margin-right: 0.75rem; color: var(--primary);"></i>
-                    <?php echo __('welcome'); ?>, <?php echo $_SESSION['user_name'] ?? 'Utilisateur'; ?>
+                    Bienvenue, <?php echo $_SESSION['user_name'] ?? 'Utilisateur'; ?>
                 </h2>
                 <div class="user-info-grid">
                     <div class="user-info-item">
@@ -93,7 +68,7 @@ if (!function_exists('__')) {
                             <i class="fas fa-envelope"></i>
                         </div>
                         <div class="info-details">
-                            <span class="info-label"><?php echo __('email'); ?></span>
+                            <span class="info-label">Email</span>
                             <span class="info-value"><?php echo $_SESSION['user_email'] ?? 'Non défini'; ?></span>
                         </div>
                     </div>
@@ -102,7 +77,7 @@ if (!function_exists('__')) {
                             <i class="fas fa-user-tie"></i>
                         </div>
                         <div class="info-details">
-                            <span class="info-label"><?php echo __('role'); ?></span>
+                            <span class="info-label">Rôle</span>
                             <span class="info-value role-<?php echo strtolower($_SESSION['user_role'] ?? 'etudiant'); ?>">
                                 <?php 
                                 $roles = ['admin' => 'Administrateur', 'etudiant' => 'Étudiant', 'professeur' => 'Professeur'];
@@ -116,7 +91,7 @@ if (!function_exists('__')) {
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="info-details">
-                            <span class="info-label"><?php echo __('member_since'); ?></span>
+                            <span class="info-label">Membre depuis</span>
                             <span class="info-value"><?php echo date('F Y'); ?></span>
                         </div>
                     </div>
@@ -125,12 +100,12 @@ if (!function_exists('__')) {
             <div class="welcome-actions">
                 <a href="/books" class="action-btn primary-btn">
                     <i class="fas fa-book-open"></i>
-                    <span><?php echo __('explore_catalogue'); ?></span>
+                    <span>Explorer le catalogue</span>
                     <i class="fas fa-arrow-right"></i>
                 </a>
                 <a href="/loans" class="action-btn loans-btn">
                     <i class="fas fa-book-reader"></i>
-                    <span><?php echo __('view_my_loans'); ?></span>
+                    <span>Voir mes emprunts</span>
                     <i class="fas fa-chevron-right"></i>
                 </a>
             </div>
@@ -143,13 +118,13 @@ if (!function_exists('__')) {
     <div class="section-header">
         <h2 class="section-title">
             <i class="fas fa-star-of-life"></i>
-            <?php echo __('new_arrivals'); ?>
+            Nouveautés
         </h2>
     </div>
     <div class="books-grid">
         <?php if (!empty($recent_books)): ?>
             <?php foreach ($recent_books as $index => $book): ?>
-            <div class="book-card">
+            <div class="book-card <?php echo $themeClass ?? ''; ?>">
                 <div class="book-cover" style="background-image: url('<?php echo $book['cover_image'] ?? '/assets/images/default-cover.jpg'; ?>')">
                     <?php if ($index == 0): ?>
                     <div class="book-badge">
@@ -168,17 +143,17 @@ if (!function_exists('__')) {
                         </span>
                         <span class="badge <?php echo ($book['available_quantity'] ?? 0) > 0 ? 'badge-success' : 'badge-warning'; ?>">
                             <i class="fas <?php echo ($book['available_quantity'] ?? 0) > 0 ? 'fa-check-circle' : 'fa-clock'; ?>"></i>
-                            <?php echo ($book['available_quantity'] ?? 0) > 0 ? __('available') : __('unavailable'); ?>
+                            <?php echo ($book['available_quantity'] ?? 0) > 0 ? 'Disponible' : 'Indisponible'; ?>
                         </span>
                     </div>
                     <div class="book-actions">
                         <?php if (($book['available_quantity'] ?? 0) > 0): ?>
                         <button class="book-action-btn borrow" onclick="borrowBook(<?php echo $book['id']; ?>)">
-                            <i class="fas fa-book-reader"></i> <?php echo __('borrow'); ?>
+                            <i class="fas fa-book-reader"></i> Emprunter
                         </button>
                         <?php endif; ?>
                         <button class="book-action-btn reserve" onclick="reserveBook(<?php echo $book['id']; ?>)">
-                            <i class="fas fa-calendar-check"></i> <?php echo __('reserve'); ?>
+                            <i class="fas fa-calendar-check"></i> Réserver
                         </button>
                     </div>
                 </div>
@@ -212,7 +187,6 @@ if (!function_exists('__')) {
 </div>
 
 <style>
-/* Welcome Section */
 .welcome-section {
     margin-bottom: 2rem;
 }
@@ -307,7 +281,6 @@ if (!function_exists('__')) {
     color: #f59e0b;
 }
 
-/* Action Buttons */
 .welcome-actions {
     display: flex;
     gap: 1rem;
@@ -356,7 +329,6 @@ if (!function_exists('__')) {
     box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
-/* Book Cards améliorés */
 .books-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -519,38 +491,6 @@ if (!function_exists('__')) {
     transform: translateY(-2px);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .welcome-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .user-info-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .welcome-actions {
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .action-btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .books-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .book-meta {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-
-/* Recommandations Section */
 .recommendations-section {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.03));
 }
@@ -591,6 +531,192 @@ if (!function_exists('__')) {
     color: var(--primary);
     margin-bottom: 1rem;
 }
+
+.recommendation-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: 0 20px 30px -15px rgba(0, 0, 0, 0.3);
+}
+
+.recommendation-cover {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.recommendation-type {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    backdrop-filter: blur(5px);
+}
+
+.recommendation-info {
+    padding: 1rem;
+}
+
+.recommendation-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recommendation-author {
+    font-size: 0.75rem;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+}
+
+.recommendation-reason {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(99, 102, 241, 0.08);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.recommendation-reason i {
+    color: var(--warning);
+    font-size: 0.8rem;
+}
+
+.recommendation-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-recommend-borrow, .btn-recommend-reserve {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-recommend-borrow {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.btn-recommend-reserve {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.btn-recommend-borrow:hover, .btn-recommend-reserve:hover {
+    transform: translateY(-2px);
+}
+
+body.light-theme .book-card {
+    background: #ffffff;
+    border: 1px solid #e9eef3;
+}
+
+body.light-theme .book-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .book-info {
+    background: #ffffff;
+}
+
+body.light-theme .book-title {
+    color: #1e293b;
+}
+
+body.light-theme .book-author {
+    color: #6366f1;
+}
+
+body.light-theme .book-isbn {
+    color: #64748b;
+}
+
+body.light-theme .book-meta {
+    border-top-color: #e9eef3;
+    border-bottom-color: #e9eef3;
+}
+
+body.light-theme .badge-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+body.light-theme .badge-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+body.light-theme .book-action-btn.reserve {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+body.light-theme .book-action-btn.reserve:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+@media (max-width: 768px) {
+    .welcome-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .user-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .welcome-actions {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .books-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .book-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
 </style>
 
 <script>
@@ -620,20 +746,18 @@ function reserveBook(bookId) {
     alert('📅 Fonction de réservation à venir');
 }
 
-// Charger les recommandations
 async function loadRecommendations() {
     try {
         const response = await fetch('/api/recommendations');
         const data = await response.json();
         
         if (data.success && data.recommendations && data.recommendations.length > 0) {
-            const grid = document.getElementById('recommendationsGrid');
-            grid.innerHTML = '<div class="empty-recommendations"><i class="fas fa-lightbulb"></i><p>Empruntez des livres pour obtenir des recommandations !</p></div>';
+            displayRecommendations(data.recommendations);
         } else {
             document.getElementById('recommendationsGrid').innerHTML = `
                 <div class="empty-recommendations">
                     <i class="fas fa-lightbulb"></i>
-                    <p>Empruntez quelques livres pour obtenir des recommandations personnalisées !</p>
+                    <p>Empruntez des livres pour obtenir des recommandations personnalisées !</p>
                 </div>
             `;
         }
@@ -648,7 +772,89 @@ async function loadRecommendations() {
     }
 }
 
-// Charger les recommandations au chargement de la page
+function displayRecommendations(books) {
+    const grid = document.getElementById('recommendationsGrid');
+    
+    if (!books || books.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-recommendations">
+                <i class="fas fa-lightbulb"></i>
+                <p>Empruntez des livres pour obtenir des recommandations personnalisées !</p>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = books.map(book => {
+        let typeIcon = 'fa-magic';
+        let typeColor = '#6366f1';
+        let typeBg = 'rgba(99, 102, 241, 0.1)';
+        let typeLabel = 'Recommandation';
+        
+        if (book.type === 'category') {
+            typeIcon = 'fa-book';
+            typeColor = '#10b981';
+            typeBg = 'rgba(16, 185, 129, 0.1)';
+            typeLabel = 'Par catégorie';
+        } else if (book.type === 'author') {
+            typeIcon = 'fa-user-pen';
+            typeColor = '#f59e0b';
+            typeBg = 'rgba(245, 158, 11, 0.1)';
+            typeLabel = 'Même auteur';
+        } else if (book.type === 'popular') {
+            typeIcon = 'fa-fire';
+            typeColor = '#ef4444';
+            typeBg = 'rgba(239, 68, 68, 0.1)';
+            typeLabel = 'Tendance';
+        } else if (book.type === 'new') {
+            typeIcon = 'fa-star';
+            typeColor = '#3b82f6';
+            typeBg = 'rgba(59, 130, 246, 0.1)';
+            typeLabel = 'Nouveauté';
+        }
+        
+        return `
+            <div class="recommendation-card" data-book-id="${book.id}">
+                <div class="recommendation-cover" style="background-image: url('${book.cover_image || '/assets/images/default-cover.jpg'}')">
+                    <div class="recommendation-type" style="background: ${typeBg}; color: ${typeColor};">
+                        <i class="fas ${typeIcon}"></i>
+                        <span>${typeLabel}</span>
+                    </div>
+                </div>
+                <div class="recommendation-info">
+                    <h4 class="recommendation-title">${escapeHtml(book.title)}</h4>
+                    <p class="recommendation-author">${escapeHtml(book.author)}</p>
+                    <div class="recommendation-reason">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>${escapeHtml(book.reason || 'Recommandé pour vous')}</span>
+                    </div>
+                    <div class="recommendation-meta">
+                        <span class="badge ${book.available_quantity > 0 ? 'badge-success' : 'badge-warning'}">
+                            <i class="fas ${book.available_quantity > 0 ? 'fa-check-circle' : 'fa-clock'}"></i>
+                            ${book.available_quantity > 0 ? 'Disponible' : 'Indisponible'}
+                        </span>
+                        ${book.available_quantity > 0 ? 
+                            `<button class="btn-recommend-borrow" onclick="borrowBook(${book.id})">
+                                <i class="fas fa-book-reader"></i> Emprunter
+                            </button>` : 
+                            `<button class="btn-recommend-reserve" onclick="reserveBook(${book.id})">
+                                <i class="fas fa-clock"></i> Réserver
+                            </button>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadRecommendations();
 });

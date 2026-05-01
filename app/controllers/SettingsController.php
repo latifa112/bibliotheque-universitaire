@@ -6,11 +6,9 @@ class SettingsController extends Controller {
             $this->redirect('/login');
         }
         
-        // Récupérer les données utilisateur
         $userModel = new User();
         $userData = $userModel->findById($_SESSION['user_id']);
         
-        // Préparer l'array $user avec toutes les clés nécessaires
         $user = [
             'first_name' => $userData['first_name'] ?? '',
             'last_name' => $userData['last_name'] ?? '',
@@ -19,7 +17,6 @@ class SettingsController extends Controller {
             'created_at' => $userData['created_at'] ?? date('Y-m-d H:i:s')
         ];
         
-        // Récupérer les statistiques
         $book = new Book();
         $allBooks = $book->findAll();
         $totalBooks = count($allBooks);
@@ -118,6 +115,13 @@ class SettingsController extends Controller {
         
         $data = json_decode(file_get_contents('php://input'), true);
         
+        // Mettre à jour la langue
+        if (isset($data['language'])) {
+            $lang = Language::getInstance();
+            $lang->setLanguage($data['language']);
+        }
+        
+        // Mettre à jour les préférences
         $_SESSION['preferences'] = [
             'notifications' => $data['notifications'] ?? true,
             'language' => $data['language'] ?? 'fr',
@@ -131,5 +135,11 @@ class SettingsController extends Controller {
             'language' => $data['language'] ?? 'fr'
         ]);
     }
+
+    public function deleteAccount() {
+    // Rediriger vers UserController pour la suppression
+    $userController = new UserController();
+    $userController->deleteAccount();
+}
 }
 ?>
